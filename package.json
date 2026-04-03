@@ -1,0 +1,33 @@
+{
+  "name": "dojoapp",
+  "version": "1.0.0",
+  "description": "Sistema de Gestión para Kiosco y Panadería",
+  "main": "index.js",
+  "engines": {
+    "node": "22.21.1",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/desarrolloslbanegas/DojoApp.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/desarrolloslbanegas/DojoApp/issues"
+  },
+  "homepage": "https://github.com/desarrolloslbanegas/DojoApp#readme",
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "ejs": "^5.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.20.0"
+  }
+}

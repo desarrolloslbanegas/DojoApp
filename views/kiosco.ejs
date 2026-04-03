@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venta Kiosco | Dojo System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-main: #f1f5f9; --sidebar-bg: #0f172a; --accent: #6366f1;
+            --white: #ffffff; --success: #10b981; --danger: #ef4444; --border: #e2e8f0;
+            --sidebar-width: 260px;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* --- SIDEBAR RESPONSIVE --- */
+        .sidebar { 
+            width: var(--sidebar-width); background: var(--sidebar-bg); color: white; 
+            padding: 24px; display: flex; flex-direction: column; transition: 0.3s; z-index: 1001; 
+        }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin-bottom: 4px; font-weight: 500; }
+        .nav-item.active { background: var(--accent); color: white; }
+
+        /* --- LAYOUT --- */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .mobile-header { display: none; background: var(--sidebar-bg); color: white; padding: 15px 20px; align-items: center; justify-content: space-between; }
+        
+        .pos-container { display: grid; grid-template-columns: 1fr 400px; height: 100%; overflow: hidden; }
+
+        /* --- COLUMNA IZQUIERDA: CARGA --- */
+        .pos-entry { padding: 30px; overflow-y: auto; border-right: 1px solid var(--border); }
+        .search-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        
+        .input-row { display: grid; grid-template-columns: 2fr 1fr 100px auto; gap: 15px; margin-top: 20px; }
+        .form-group label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; background: #f8fafc; }
+
+        /* --- COLUMNA DERECHA: CARRITO --- */
+        .pos-cart { background: var(--white); display: flex; flex-direction: column; height: 100%; }
+        .cart-items { flex-grow: 1; overflow-y: auto; padding: 0 20px; }
+        .cart-item { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f5f9; }
+        
+        .cart-summary { padding: 20px; background: white; border-top: 1px solid var(--border); }
+        .total-box { background: #f8fafc; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .total-box span:last-child { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+
+        .payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .pay-btn { border: 1px solid var(--border); padding: 12px; border-radius: 10px; cursor: pointer; text-align: center; font-weight: 600; color: #64748b; }
+        .pay-btn.selected { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .btn-confirm-action { width: 100%; background: var(--success); color: white; border: none; padding: 18px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-confirm-action:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
+
+        /* --- MEDIA QUERIES (AJUSTE RESPONSIVE) --- */
+        @media (max-width: 1100px) {
+            .pos-container { grid-template-columns: 1fr; overflow-y: auto; }
+            .pos-cart { height: auto; border-left: none; border-top: 2px solid var(--border); }
+            .sidebar { position: fixed; left: -260px; height: 100vh; }
+            .sidebar.active { left: 0; }
+            .mobile-header { display: flex; }
+            .overlay.active { display: block; }
+            body { flex-direction: column; }
+        }
+
+        @media (max-width: 600px) {
+            .pos-entry { padding: 15px; }
+            .input-row { grid-template-columns: 1fr 1fr; }
+            .input-row .form-group:first-child { grid-column: span 2; }
+            .input-row button { grid-column: span 2; padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div style="font-weight: 800; font-size: 1.3rem; margin-bottom: 40px; display: flex; align-items: center; gap: 10px;">
+            <i data-lucide="shield"></i> DOJO SYSTEM
+        </div>
+        <nav class="nav-group">
+            <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; display: block;">Ventas</span>
+            <a href="/kiosco" class="nav-item active"><i data-lucide="shopping-cart"></i> Kiosco</a>
+            <a href="/stock" class="nav-item"><i data-lucide="package"></i> Stock</a>
+        </nav>
+    </aside>
+
+    <div class="main-content">
+        <header class="mobile-header">
+            <button onclick="toggleMenu()" style="background:none; border:none; color:white;"><i data-lucide="menu"></i></button>
+            <span style="font-weight: 700;">NUEVA VENTA</span>
+            <div style="width: 24px;"></div>
+        </header>
+
+        <div class="pos-container">
+            <section class="pos-entry">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h1 style="margin: 0; color: #1e293b;">Kiosco</h1>
+                    <span id="clock" style="font-weight: 600; color: #64748b;"></span>
+                </div>
+
+                <div class="search-card">
+                    <div class="form-group">
+                        <label>Buscar por Nombre</label>
+                        <div style="position: relative;">
+                            <i data-lucide="search" style="position: absolute; left: 12px; top: 12px; width: 18px; color: #94a3b8;"></i>
+                            <input type="text" id="product-search" list="products-list" placeholder="Escribí para buscar..." style="padding-left: 42px;" oninput="handleSearch(this.value)">
+                            <datalist id="products-list">
+                                <% if (typeof products !== 'undefined') { %>
+                                    <% products.forEach(p => { %>
+                                        <option value="<%= p.nombre %>" data-price="<%= p.precio_venta %>">
+                                    <% }) %>
+                                <% } %>
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="form-group"><label>Producto</label><input type="text" id="in-desc" readonly placeholder="-"></div>
+                        <div class="form-group"><label>Precio</label><input type="number" id="in-price" readonly placeholder="0.00"></div>
+                        <div class="form-group"><label>Cant.</label><input type="number" id="in-qty" value="1" min="1"></div>
+                        <div class="form-group" style="display: flex; align-items: flex-end;">
+                            <button onclick="addToCart()" style="background: var(--accent); color: white; border: none; border-radius: 8px; padding: 12px 20px; cursor: pointer;">
+                                <i data-lucide="plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pos-cart">
+                <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Detalle de Venta</h2>
+                    <button onclick="clearCart()" style="background:none; border:none; color: var(--danger); font-weight: 700; cursor: pointer; font-size: 0.8rem;">VACIAR</button>
+                </div>
+
+                <div class="cart-items" id="cart-list">
+                    </div>
+
+                <div class="cart-summary">
+                    <div class="total-box">
+                        <span>TOTAL</span>
+                        <span id="total-val">$0.00</span>
+                    </div>
+
+                    <label class="form-group label" style="font-size: 0.7rem; font-weight: 700; color: #64748b; display: block; margin-bottom: 8px; text-transform: uppercase;">Medio de Pago</label>
+                    <div class="payment-methods">
+                        <div class="pay-btn selected" onclick="setPay('efectivo', this)">Efectivo</div>
+                        <div class="pay-btn" onclick="setPay('transferencia', this)">Transf.</div>
+                    </div>
+
+                    <button class="btn-confirm-action" onclick="confirmarVentaFinal()">
+                        CONFIRMAR VENTA (F10)
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let carrito = [];
+        let medioPago = 'efectivo';
+
+        // Reloj
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+
+        // Búsqueda en el datalist
+        function handleSearch(val) {
+            const options = document.getElementById('products-list').options;
+            for (let opt of options) {
+                if (opt.value === val) {
+                    document.getElementById('in-desc').value = opt.value;
+                    document.getElementById('in-price').value = opt.getAttribute('data-price');
+                    return;
+                }
+            }
+        }
+
+        // Agregar al array del carrito
+        function addToCart() {
+            const desc = document.getElementById('in-desc').value;
+            const price = parseFloat(document.getElementById('in-price').value);
+            const qty = parseInt(document.getElementById('in-qty').value);
+
+            if (!desc || isNaN(price) || qty <= 0) return alert("Seleccioná un producto válido.");
+
+            carrito.push({ id: Date.now(), desc, price, qty, subtotal: price * qty });
+            actualizarTablaVisual();
+
+            // Limpiar
+            document.getElementById('product-search').value = "";
+            document.getElementById('in-desc').value = "";
+            document.getElementById('in-price').value = "";
+            document.getElementById('product-search').focus();
+        }
+
+        // Dibujar el carrito en el HTML
+        function actualizarTablaVisual() {
+            const container = document.getElementById('cart-list');
+            const totalHtml = document.getElementById('total-val');
+            let totalAcumulado = 0;
+            container.innerHTML = "";
+
+            carrito.forEach(item => {
+                totalAcumulado += item.subtotal;
+                container.innerHTML += `
+                    <div class="cart-item">
+                        <div>
+                            <div style="font-weight: 600; color: #1e293b;">${item.desc}</div>
+                            <div style="font-size: 0.85rem; color: #64748b;">${item.qty} x $${item.price.toFixed(2)}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: #1e293b;">$${item.subtotal.toFixed(2)}</div>
+                            <i data-lucide="trash-2" onclick="removeItem(${item.id})" style="width: 16px; color: var(--danger); cursor: pointer; margin-top: 5px;"></i>
+                        </div>
+                    </div>`;
+            });
+
+            totalHtml.innerText = `$${totalAcumulado.toFixed(2)}`;
+            lucide.createIcons();
+        }
+
+        function removeItem(id) { carrito = carrito.filter(i => i.id !== id); actualizarTablaVisual(); }
+        function clearCart() { if(confirm("¿Vaciar venta?")) { carrito = []; actualizarTablaVisual(); } }
+        
+        function setPay(type, el) {
+            medioPago = type;
+            document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        // Envío al Backend
+        async function confirmarVentaFinal() {
+            if (carrito.length === 0) return alert("El carrito está vacío.");
+
+            try {
+                const res = await fetch('/kiosco/confirmar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        items: carrito, 
+                        total: document.getElementById('total-val').innerText, 
+                        medioPago 
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("¡Venta registrada con éxito!");
+                    location.reload();
+                }
+            } catch (error) {
+                alert("Error al conectar con el servidor.");
+            }
+        }
+
+        // Atajo F10
+        window.addEventListener('keydown', (e) => { if(e.key === 'F10') confirmarVentaFinal(); });
+    </script>
+</body>
+</html>
