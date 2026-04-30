@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 require('dotenv').config();
 
 const db = require('./src/config/db.js');
@@ -27,12 +28,15 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // Configurar sesiones
+const sessionStore = new MySQLStore({}, db);
 app.use(session({
-  secret: 'mi_clave_secreta_muy_segura_para_dojo_app_2024',
+  key: 'dojoapp_session',
+  secret: process.env.SESSION_SECRET || 'mi_clave_secreta_muy_segura_para_dojo_app_2024',
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: false, 
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 8, // 8hs de cookie
     httpOnly: true
   }
