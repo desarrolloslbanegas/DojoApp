@@ -4,8 +4,9 @@ exports.getMenuPrincipal = (req, res) => {
   res.render('menuPrincipal', { 
     title: 'Menú Principal',
     usuario: req.session.usuarioNombre || 'Usuario',
-    idPerfil: idPerfil,
+    idPerfil,
     esAdmin: idPerfil === 1,
-    esVendedor: idPerfil === 2
+    hasKiosco: idPerfil === 1 || idPerfil === 2 || idPerfil === 4,
+    hasPanaderia: idPerfil === 1 || idPerfil === 3 || idPerfil === 4
   });
 };

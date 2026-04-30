@@ -1,4 +1,15 @@
+const crypto = require('crypto');
 const db = require('../src/config/db');
+
+function verifyPassword(password, storedPassword) {
+  if (typeof storedPassword !== 'string' || !storedPassword.includes(':')) {
+    return false;
+  }
+
+  const [salt, key] = storedPassword.split(':');
+  const derivedKey = crypto.scryptSync(password, salt, 64).toString('hex');
+  return crypto.timingSafeEqual(Buffer.from(key, 'hex'), Buffer.from(derivedKey, 'hex'));
+}
 
 exports.login = (req, res) => {
   const { nombre, password } = req.body;
@@ -17,6 +28,14 @@ exports.login = (req, res) => {
     req.session.usuarioId = 1;
     req.session.usuarioNombre = nombre;
     req.session.idPerfil = 1; // Admin por defecto en desarrollo
+
+    // Registrar login en la tabla log (modo mock)
+    const insertLog = 'INSERT INTO log (user_id, login_time) VALUES (?, NOW())';
+    db.query(insertLog, [1], (err) => {
+      if (err) {
+        console.error('Error al registrar login en log:', err);
+      }
+    });
 
     return res.redirect('/menu-principal');
   }
@@ -43,7 +62,11 @@ exports.login = (req, res) => {
     const usuario = results[0];
 
     // Validar la contraseña
-    if (usuario.password !== password) {
+    const isPasswordValid = typeof usuario.password === 'string' && usuario.password.includes(':')
+      ? verifyPassword(password, usuario.password)
+      : usuario.password === password;
+
+    if (!isPasswordValid) {
       return res.status(401).render('login', { 
         title: 'Login',
         error: 'Usuario o contraseña incorrectos'
@@ -55,12 +78,32 @@ exports.login = (req, res) => {
     req.session.usuarioNombre = usuario.nombre;
     req.session.idPerfil = usuario.id_perfil;
 
+    // Registrar login en la tabla log
+    const insertLog = 'INSERT INTO log (user_id, login_time) VALUES (?, NOW())';
+    db.query(insertLog, [usuario.id_usuario], (err) => {
+      if (err) {
+        console.error('Error al registrar login en log:', err);
+      }
+    });
+
     // Redirigir al menú principal
     res.redirect('/menu-principal');
   });
 };
 
 exports.logout = (req, res) => {
+  const usuarioId = req.session.usuarioId;
+
+  if (usuarioId) {
+    // Actualizar logout_time en la tabla log
+    const updateLog = 'UPDATE log SET logout_time = NOW() WHERE user_id = ? AND logout_time IS NULL ORDER BY login_time DESC LIMIT 1';
+    db.query(updateLog, [usuarioId], (err) => {
+      if (err) {
+        console.error('Error al registrar logout en log:', err);
+      }
+    });
+  }
+
   req.session = null;
   res.redirect('/login');
 };

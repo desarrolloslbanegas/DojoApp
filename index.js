@@ -6,6 +6,7 @@ require('dotenv').config();
 const db = require('./src/config/db.js');
 
 
+const kioscoController = require('./controllers/kioscoController');
 const kioscoRouter = require('./routes/kiosco');
 const authRouter = require('./routes/auth');
 const menuPrincipalRouter = require('./routes/menuPrincipal');
@@ -22,6 +23,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Servir archivos estáticos desde /src para imágenes y recursos simples
+app.use('/src', express.static(path.join(__dirname, 'src')));
+
 // Configurar sesiones
 app.use(session({
   secret: 'mi_clave_secreta_muy_segura_para_dojo_app_2024',
@@ -29,7 +33,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: { 
     secure: false, 
-    maxAge: 1000 * 60 * 60 * 24, // 24 horas
+    maxAge: 1000 * 60 * 60 * 8, // 8hs de cookie
     httpOnly: true
   }
 }));
@@ -56,26 +60,40 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware para verificar que sea vendedor (id_perfil = 2)
-const requireVendedor = (req, res, next) => {
+// Middleware para verificar acceso a kiosco (id_perfil = 1, 2 o 4)
+const requireKioscoAccess = (req, res, next) => {
   if (!req.session || !req.session.usuarioNombre) {
     return res.redirect('/login');
   }
-  if (req.session.idPerfil !== 2) {
+  if (![1, 2, 4].includes(req.session.idPerfil)) {
     return res.status(403).render('acceso-denegado', { 
       title: 'Acceso Denegado',
-      mensaje: 'No tienes permiso para acceder a esta sección. Solo vendedores.'
+      mensaje: 'No tienes permiso para acceder a Kiosco.'
     });
   }
   next();
 };
 
-// Middleware para verificar que sea admin o vendedor (id_perfil = 1 o 2)
+// Middleware para verificar acceso a panaderia (id_perfil = 1, 3 o 4)
+const requirePanaderiaAccess = (req, res, next) => {
+  if (!req.session || !req.session.usuarioNombre) {
+    return res.redirect('/login');
+  }
+  if (![1, 3, 4].includes(req.session.idPerfil)) {
+    return res.status(403).render('acceso-denegado', { 
+      title: 'Acceso Denegado',
+      mensaje: 'No tienes permiso para acceder a Panadería.'
+    });
+  }
+  next();
+};
+
+// Middleware para verificar que sea admin o vendedor general (id_perfil = 1, 2 o 4)
 const requireAdminOrVendedor = (req, res, next) => {
   if (!req.session || !req.session.usuarioNombre) {
     return res.redirect('/login');
   }
-  if (req.session.idPerfil !== 1 && req.session.idPerfil !== 2) {
+  if (![1, 2, 4].includes(req.session.idPerfil)) {
     return res.status(403).render('acceso-denegado', { 
       title: 'Acceso Denegado',
       mensaje: 'No tienes permiso para acceder a esta sección.'
@@ -86,8 +104,9 @@ const requireAdminOrVendedor = (req, res, next) => {
 
 app.use(authRouter);
 app.use('/menu-principal', requireAuth, menuPrincipalRouter);
-app.use('/kiosco', requireAdminOrVendedor, kioscoRouter);
-app.use('/panaderia', requireAdminOrVendedor, panaderiaRouter);
+app.get('/kiosco/historial', requireAdmin, kioscoController.getHistorialVentas);
+app.use('/kiosco', requireKioscoAccess, kioscoRouter);
+app.use('/panaderia', requirePanaderiaAccess, panaderiaRouter);
 app.use('/stock', requireAdmin, stockRouter);
 app.use('/usuarios', requireAdmin, usuariosRouter);
 

@@ -2,20 +2,372 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/src/icono.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; text-align: center; padding: 50px; }
-        .container { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
-        h1 { color: #333; }
-        .back-btn { background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px; display: inline-block; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; }
+        header { padding: 22px 24px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        main { padding: 24px; }
+        .button, .button-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; background: #16a34a; color: white; text-decoration: none; border: none; cursor: pointer; }
+        .button:hover, .button-secondary:hover { background: #15803d; }
+        .button-violet { background: #6366f1; }
+        .button-violet:hover { background: #475569; }
+        .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .panel { background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 20px; margin-bottom: 24px; }
+        .action-tabs { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; justify-content: center; }
+        .action-tab { appearance: none; border: 1px solid transparent; border-radius: 12px; background: #e2e8f0; color: #0f172a; padding: 12px 18px; cursor: pointer; font-weight: 700; }
+        .action-tab.active { background: #6366f1; color: white; border-color: #6366f1; }
+        .action-tab:hover { background: #475569; color: white; }
+        .form-section.hidden { display: none; }
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; min-width: 700px; }
+        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f1f5f9; font-weight: 700; color: #334155; }
+        tr:nth-child(even) { background: #f8fafc; }
+        .right { text-align: right; }
+        .badge { background: #eef2ff; color: #312e81; padding: 6px 10px; border-radius: 999px; font-size: 0.85rem; display: inline-block; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-danger { background: #fef2f2; color: #991b1b; }
+        .success-box { background: #dcfce7; color: #166534; padding: 16px; border-radius: 14px; border: 1px solid #bbf7d0; margin-bottom: 16px; }
+        .error-box { background: #fee2e2; color: #991b1b; padding: 16px; border-radius: 14px; border: 1px solid #fecaca; margin-bottom: 16px; }
+        .user-form { display: grid; gap: 18px; margin-bottom: 24px; max-width: 720px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: end; }
+        .form-group-inline { display: flex; flex-direction: column; gap: 8px; max-width: 340px; }
+        .form-group-inline label { font-weight: 700; color: #475569; }
+        .form-group-inline input { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.95rem; }
+        .password-input-wrapper { display: flex; gap: 10px; align-items: center; }
+        .password-input-wrapper input { flex: 1; }
+        .show-password-button { background: #e2e8f0; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 700; transition: background 0.2s ease; }
+        .show-password-button:hover { background: #cbd5e1; }
+        .hint { margin-top: 8px; color: #64748b; font-size: 0.92rem; }
+        .checkbox-list { display: grid; gap: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; cursor: pointer; }
+        .checkbox-item input { width: 18px; height: 18px; }
+        .user-table th, .user-table td { white-space: nowrap; }
+        .no-data { padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 18px; color: #475569; text-align: center; }
+        @media (max-width: 800px) {
+            header { flex-direction: column; align-items: flex-start; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1><%= title %></h1>
-        <p>Módulo en desarrollo...</p>
-        <a href="/menu-principal" class="back-btn">Volver al Menú Principal</a>
-    </div>
+    <header>
+        <div>
+            <h1 style="margin:0; font-size: 1.6rem;">Gestión de Usuarios</h1>
+            <p style="margin:6px 0 0 0; color:#64748b;">Administra usuarios y consulta el log de accesos.</p>
+        </div>
+        <a href="/menu-principal" class="button button-violet"><i data-lucide="arrow-left"></i> Volver al menú</a>
+    </header>
+    <main>
+        <div class="panel">
+            <div class="action-tabs">
+                <button type="button" class="action-tab active" id="tab-gestion" onclick="selectUserAction('gestion')">Gestión de usuarios</button>
+                <button type="button" class="action-tab" id="tab-usuarios" onclick="selectUserAction('usuarios')">Usuarios</button>
+                <button type="button" class="action-tab" id="tab-log" onclick="selectUserAction('log')">Log de usuarios</button>
+            </div>
+            
+            <div class="form-section" id="form-gestion">
+                <% if (successMessage) { %>
+                    <div class="success-box"><%= successMessage %></div>
+                <% } %>
+                <% if (errorMessage) { %>
+                    <div class="error-box"><%= errorMessage %></div>
+                <% } %>
+
+                <form action="/usuarios" method="POST" class="user-form">
+                    <div class="form-grid">
+                        <div class="form-group-inline">
+                            <label for="nombre">Nombre</label>
+                            <input type="text" id="nombre" name="nombre" placeholder="Usuario" value="<%= formValues.nombre || '' %>" required>
+                        </div>
+                        <div class="form-group-inline">
+                            <label for="password">Contraseña</label>
+                            <div class="password-input-wrapper">
+                                <input type="password" id="password" name="password" placeholder="Contraseña" required>
+                                <button type="button" id="show-password-button" class="show-password-button" onclick="togglePasswordVisibility()">Mostrar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group-inline">
+                        <label>Permisos</label>
+                        <div class="checkbox-list">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="perfil-1" name="perfil" value="1" class="perfil-checkbox" <%= Array.isArray(formValues.perfil) && formValues.perfil.includes('1') ? 'checked' : '' %>> Admin
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="perfil-2" name="perfil" value="2" class="perfil-checkbox" <%= Array.isArray(formValues.perfil) && formValues.perfil.includes('2') ? 'checked' : '' %>> Kiosco
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="perfil-3" name="perfil" value="3" class="perfil-checkbox" <%= Array.isArray(formValues.perfil) && formValues.perfil.includes('3') ? 'checked' : '' %>> Panadería
+                            </label>
+                        </div>
+                        <p class="hint">Selecciona Kiosco y/o Panadería. Si marcas Admin, se ignoran los permisos individuales.</p>
+                    </div>
+
+                    <button type="submit" class="button" style="width: 17%;">Crear usuario</button>
+                </form>
+            </div>
+
+            <div class="form-section hidden" id="form-usuarios">
+                <div class="edit-box" id="edit-box" style="display:none; margin-bottom: 24px; border: 1px solid #e2e8f0; border-radius: 18px; padding: 20px; background: #f8fafc;">
+                    <h2 style="margin-top: 0;">Editar usuario</h2>
+                    <form action="/usuarios/actualizar" method="POST" class="user-form">
+                        <input type="hidden" name="id_usuario" id="edit-id_usuario" value="<%= editValues.id_usuario || '' %>">
+                        <div class="form-grid">
+                            <div class="form-group-inline">
+                                <label for="edit-nombre">Nombre</label>
+                                <input type="text" id="edit-nombre" name="nombre" placeholder="Usuario" value="<%= editValues.nombre || '' %>" required>
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="edit-password">Nueva contraseña</label>
+                                <div class="password-input-wrapper">
+                                    <input type="password" id="edit-password" name="password" placeholder="Nueva contraseña">
+                                    <button type="button" id="edit-show-password-button" class="show-password-button" onclick="toggleEditPasswordVisibility()">Mostrar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group-inline">
+                            <label>Permisos</label>
+                            <div class="checkbox-list">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="edit-perfil-1" name="perfil" value="1" class="perfil-checkbox edit-perfil-checkbox" <%= Array.isArray(editValues.perfil) && editValues.perfil.includes('1') ? 'checked' : '' %>> Admin
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="edit-perfil-2" name="perfil" value="2" class="perfil-checkbox edit-perfil-checkbox" <%= Array.isArray(editValues.perfil) && editValues.perfil.includes('2') ? 'checked' : '' %>> Kiosco
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="edit-perfil-3" name="perfil" value="3" class="perfil-checkbox edit-perfil-checkbox" <%= Array.isArray(editValues.perfil) && editValues.perfil.includes('3') ? 'checked' : '' %>> Panadería
+                                </label>
+                            </div>
+                            <p class="hint">Selecciona Kiosco y/o Panadería. Si marcas Admin, se ignoran los permisos individuales.</p>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button type="submit" class="button">Guardar cambios</button>
+                            <button type="button" class="button-secondary" onclick="cancelEdit()">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <h2 style="margin-top: 0;">Usuarios existentes</h2>
+                <% if (users && users.length > 0) { %>
+                    <div class="table-wrapper">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Perfil</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% users.forEach(user => { %>
+                                    <tr data-id="<%= user.id_usuario %>" data-nombre="<%= user.nombre %>" data-perfil="<%= user.id_perfil %>">
+                                        <td><%= user.nombre %></td>
+                                        <td><span class="badge"><%= user.perfil_nombre %></span></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button type="button" class="button-secondary" onclick="editUser(this.closest('tr'))">Editar</button>
+                                                <form action="/usuarios/borrar" method="POST" onsubmit="return confirm('¿Confirma que desea borrar este usuario?');" style="display:inline;">
+                                                    <input type="hidden" name="id_usuario" value="<%= user.id_usuario %>">
+                                                    <button type="submit" class="button-secondary">Borrar</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } else { %>
+                    <div class="no-data">No hay usuarios registrados.</div>
+                <% } %>
+            </div>
+
+            <div class="form-section hidden" id="form-log">
+                <h2>Log de accesos</h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Login</th>
+                                <th>Logout</th>
+                                <th>Duración</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-table-body">
+                            <tr>
+                                <td colspan="4" style="text-align: center;">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const createPerfilCheckboxes = document.querySelectorAll('#form-gestion .perfil-checkbox');
+        const createAdminCheckbox = document.getElementById('perfil-1');
+        const createKioscoCheckbox = document.getElementById('perfil-2');
+        const createPanaderiaCheckbox = document.getElementById('perfil-3');
+
+        const editPerfilCheckboxes = document.querySelectorAll('.edit-perfil-checkbox');
+        const editAdminCheckbox = document.getElementById('edit-perfil-1');
+        const editKioscoCheckbox = document.getElementById('edit-perfil-2');
+        const editPanaderiaCheckbox = document.getElementById('edit-perfil-3');
+
+        function syncPerfilCheckboxes(adminCheckbox, kioscoCheckbox, panaderiaCheckbox) {
+            if (adminCheckbox.checked) {
+                kioscoCheckbox.checked = false;
+                panaderiaCheckbox.checked = false;
+            } else if (kioscoCheckbox.checked || panaderiaCheckbox.checked) {
+                adminCheckbox.checked = false;
+            }
+        }
+
+        function bindPerfilGroup(adminCheckbox, kioscoCheckbox, panaderiaCheckbox, checksum) {
+            [adminCheckbox, kioscoCheckbox, panaderiaCheckbox].forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (this === adminCheckbox && this.checked) {
+                        kioscoCheckbox.checked = false;
+                        panaderiaCheckbox.checked = false;
+                    }
+
+                    if ((this === kioscoCheckbox || this === panaderiaCheckbox) && this.checked) {
+                        adminCheckbox.checked = false;
+                    }
+                });
+            });
+        }
+
+        bindPerfilGroup(createAdminCheckbox, createKioscoCheckbox, createPanaderiaCheckbox);
+        bindPerfilGroup(editAdminCheckbox, editKioscoCheckbox, editPanaderiaCheckbox);
+
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const button = document.getElementById('show-password-button');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = 'Ocultar';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = 'Mostrar';
+            }
+        }
+
+        function toggleEditPasswordVisibility() {
+            const passwordInput = document.getElementById('edit-password');
+            const button = document.getElementById('edit-show-password-button');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = 'Ocultar';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = 'Mostrar';
+            }
+        }
+
+        function editUser(row) {
+            const userId = row.dataset.id;
+            const nombre = row.dataset.nombre;
+            const perfil = row.dataset.perfil;
+
+            document.getElementById('edit-box').style.display = 'block';
+            document.getElementById('edit-id_usuario').value = userId;
+            document.getElementById('edit-nombre').value = nombre;
+            document.getElementById('edit-password').value = '';
+            document.getElementById('edit-show-password-button').textContent = 'Mostrar';
+
+            editAdminCheckbox.checked = perfil === '1';
+            editKioscoCheckbox.checked = perfil === '2' || perfil === '4';
+            editPanaderiaCheckbox.checked = perfil === '3' || perfil === '4';
+            syncPerfilCheckboxes(editAdminCheckbox, editKioscoCheckbox, editPanaderiaCheckbox);
+            selectUserAction('usuarios');
+        }
+
+        function cancelEdit() {
+            document.getElementById('edit-box').style.display = 'none';
+            document.getElementById('edit-id_usuario').value = '';
+            document.getElementById('edit-nombre').value = '';
+            document.getElementById('edit-password').value = '';
+            editAdminCheckbox.checked = false;
+            editKioscoCheckbox.checked = false;
+            editPanaderiaCheckbox.checked = false;
+        }
+
+        function selectUserAction(action) {
+            document.querySelectorAll('.action-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.form-section').forEach(section => section.classList.add('hidden'));
+            
+            document.getElementById('tab-' + action).classList.add('active');
+            document.getElementById('form-' + action).classList.remove('hidden');
+
+            if (action === 'log') {
+                loadLogData();
+            }
+        }
+
+        const initialTab = "<%= activeTab || 'gestion' %>";
+        selectUserAction(initialTab);
+
+        const initialEditUserId = "<%= editValues.id_usuario || '' %>";
+        if (initialEditUserId) {
+            document.getElementById('edit-box').style.display = 'block';
+        }
+
+        function loadLogData() {
+            fetch('/usuarios/log')
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('log-table-body');
+                    if (!data || data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay registros</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = data.map(log => {
+                        const loginTime = log.login_time ? new Date(log.login_time).toLocaleString('es-AR') : '-';
+                        const logoutTime = log.logout_time ? new Date(log.logout_time).toLocaleString('es-AR') : '<span class="badge badge-success">Conectado</span>';
+                        
+                        let duracion = '-';
+                        if (log.login_time && log.logout_time) {
+                            const login = new Date(log.login_time);
+                            const logout = new Date(log.logout_time);
+                            const diffMs = logout - login;
+                            const diffMins = Math.floor(diffMs / 60000);
+                            const diffHrs = Math.floor(diffMins / 60);
+                            if (diffHrs > 0) {
+                                duracion = diffHrs + 'h ' + (diffMins % 60) + 'm';
+                            } else {
+                                duracion = diffMins + 'm';
+                            }
+                        }
+
+                        return `
+                            <tr>
+                                <td>${log.nombre || 'Usuario #' + log.user_id}</td>
+                                <td>${loginTime}</td>
+                                <td>${logoutTime}</td>
+                                <td>${duracion}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    document.getElementById('log-table-body').innerHTML = '<tr><td colspan="4" style="text-align: center;">Error al cargar datos</td></tr>';
+                });
+        }
+    </script>
 </body>
 </html>

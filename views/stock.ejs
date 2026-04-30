@@ -2,20 +2,273 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/src/icono.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; text-align: center; padding: 50px; }
-        .container { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
-        h1 { color: #333; }
-        .back-btn { background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px; display: inline-block; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; }
+        header { padding: 22px 24px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        main { padding: 24px; }
+        .button { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; background: #6366f1; color: white; text-decoration: none; border: none; cursor: pointer; }
+        .panel { background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 20px; margin-bottom: 24px; }
+        .grid { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 600px; margin: 0 auto; }
+        .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .field label { font-size: 0.9rem; color: #475569; }
+        .field input, .field select { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; color: #0f172a; }
+        .field input[type="number"] { width: 100%; }
+        .form-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 18px; padding: 20px; }
+        .form-section h2 { margin-top: 0; }
+        .form-section#form-ver { background: transparent; border: none; padding: 0; }
+        .action-tabs { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; justify-content: center; }
+        .action-tab { appearance: none; border: 1px solid transparent; border-radius: 12px; background: #e2e8f0; color: #0f172a; padding: 12px 18px; cursor: pointer; font-weight: 700; }
+        .action-tab.active { background: #6366f1; color: white; border-color: #6366f1; }
+        .action-tab:hover { background: #475569; color: white; }
+        .form-section.hidden { display: none; }
+        .button-orange { background: #f59e0b; }
+        .button-orange:hover { background: #d97706; }
+        #form-ver .table-wrapper { padding: 20px; }
+        #form-ver .table-wrapper h2 { margin: 0 0 20px 0; }
+        .table-wrapper { overflow-x: auto; max-width: 1200px; margin: 0 auto; margin-left: -140px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; min-width: 940px; }
+        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f1f5f9; font-weight: 700; color: #334155; }
+        tr:nth-child(even) { background: #f8fafc; }
+        .right { text-align: right; }
+        .badge { background: #eef2ff; color: #312e81; padding: 6px 10px; border-radius: 999px; font-size: 0.85rem; display: inline-block; }
+        .message { padding: 14px 18px; border-radius: 14px; margin-bottom: 24px; }
+        .message.success { background: #ecfdf5; color: #166534; border: 1px solid #d1fae5; }
+        .message.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; max-width: 100%; }
+            header { flex-direction: column; align-items: flex-start; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1><%= title %></h1>
-        <p>Módulo en desarrollo...</p>
-        <a href="/menu-principal" class="back-btn">Volver al Menú Principal</a>
-    </div>
+    <header>
+        <div>
+            <h1 style="margin:0; font-size: 1.6rem;">Administrar Stock</h1>
+            <p style="margin:6px 0 0 0; color:#64748b;">Carga nuevos productos y completa stock existente.</p>
+        </div>
+        <a href="/menu-principal" class="button"><i data-lucide="arrow-left"></i> Volver al menú</a>
+    </header>
+    <main>
+        <% if (mensaje) { %>
+            <div class="message <%= tipoMensaje %>"><%= mensaje %></div>
+        <% } %>
+
+        <div class="panel">
+            <div class="action-tabs">
+                <button type="button" class="action-tab active" id="tab-nuevo" onclick="selectStockAction('nuevo')">Nuevo producto</button>
+                <button type="button" class="action-tab" id="tab-completar" onclick="selectStockAction('completar')">Completar stock</button>
+                <button type="button" class="action-tab" id="tab-ver" onclick="selectStockAction('ver')">Ver productos</button>
+            </div>
+            <div class="grid">
+                <div class="form-section" id="form-nuevo">
+                    <h2>Nuevo producto</h2>
+                    <form method="POST" action="/stock/producto">
+                        <input type="hidden" id="accion" name="accion" value="nuevo">
+                        <input type="hidden" id="id_producto_editar" name="id_producto" value="">
+                        <div class="field">
+                            <label for="codigo_barras">Código de barras</label>
+                            <input type="text" id="codigo_barras" name="codigo_barras" autocomplete="off" autofocus required>
+                        </div>
+                        <div class="field">
+                            <label for="nombre">Nombre</label>
+                            <input type="text" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="field">
+                            <label for="precio_costo">Precio de costo</label>
+                            <input type="number" id="precio_costo" name="precio_costo" step="0.01" min="0" value="0">
+                        </div>
+                        <div class="field">
+                            <label for="precio_venta">Precio de venta</label>
+                            <input type="number" id="precio_venta" name="precio_venta" step="0.01" min="0" required>
+                        </div>
+                        <div class="field">
+                            <label for="stock">Stock inicial</label>
+                            <input type="number" id="stock" name="stock" min="0" required>
+                        </div>
+                        <div class="field">
+                            <label for="id_tipo_producto">Tipo de producto</label>
+                            <select id="id_tipo_producto" name="id_tipo_producto" required>
+                                <option value="">Seleccionar tipo</option>
+                                <% if (tipos && tipos.length) { %>
+                                    <% tipos.forEach(tipo => { %>
+                                        <option value="<%= tipo.id_tipo_producto %>"><%= tipo.descripcion %></option>
+                                    <% }) %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <button class="button" type="submit" id="submit-nuevo" style="margin-top: 10px;">Cargar producto</button>
+                        <button class="button button-orange" type="button" id="cancel-edit-button" style="display:none; margin-top: 10px; margin-left: 10px;" onclick="cancelEditProduct()">Cancelar edición</button>
+                    </form>
+                </div>
+                <div class="form-section hidden" id="form-completar">
+                    <h2>Completar stock</h2>
+                    <form method="POST" action="/stock/producto">
+                        <input type="hidden" name="accion" value="actualizar">
+                        <input type="hidden" id="id_producto" name="id_producto" required>
+                        <div class="field">
+                            <label for="producto_codigo_barras">Código de barras</label>
+                            <input type="text" id="producto_codigo_barras" name="producto_codigo_barras" autocomplete="off" list="productos-list" placeholder="Escanea o ingresa código" oninput="handleStockBarcodeInput(this.value)" required>
+                            <datalist id="productos-list">
+                                <% if (products && products.length) { %>
+                                    <% products.forEach(producto => { %>
+                                        <option value="<%= producto.codigo_barras %>"><%= producto.nombre %> - <%= producto.codigo_barras %></option>
+                                    <% }) %>
+                                <% } %>
+                            </datalist>
+                        </div>
+                        <div class="field">
+                            <label>Producto seleccionado</label>
+                            <input type="text" id="producto-seleccionado" readonly placeholder="Escanea un producto para seleccionarlo">
+                        </div>
+                        <div class="field">
+                            <label for="cantidad_a_agregar">Cantidad a agregar</label>
+                            <input type="number" id="cantidad_a_agregar" name="cantidad_a_agregar" min="1" required>
+                        </div>
+                        <button class="button" type="submit" style="margin-top: 10px;">Sumar stock</button>
+                    </form>
+                </div>
+                <div class="form-section hidden" id="form-ver" style="padding: 0; background: transparent; border: none;">
+                    <div class="table-wrapper" style="padding: 20px;">
+                        <h2 style="margin-top: 0; margin-bottom: 20px;">Productos existentes</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Código</th>
+                            <th>Tipo</th>
+                            <th class="right">Precio costo</th>
+                            <th class="right">Precio venta</th>
+                            <th class="right">Stock</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (!products || products.length === 0) { %>
+                            <tr>
+                                <td colspan="8" class="right">No hay productos registrados.</td>
+                            </tr>
+                        <% } else { %>
+                            <% products.forEach(producto => { %>
+                                <tr>
+                                    <td><%= producto.id_producto %></td>
+                                    <td><%= producto.nombre %></td>
+                                    <td><%= producto.codigo_barras %></td>
+                                    <td><%= producto.tipo || 'sin tipo' %></td>
+                                    <td class="right">$<%= Number(producto.precio_costo || 0).toFixed(2) %></td>
+                                    <td class="right">$<%= Number(producto.precio_venta || 0).toFixed(2) %></td>
+                                    <td class="right"><%= producto.stock %></td>
+                                    <td>
+                                        <button type="button" class="button button-orange" onclick='editProduct(<%- JSON.stringify(producto) %>)'>Editar</button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } %>
+                    </tbody>
+                </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        lucide.createIcons();
+
+        const stockProducts = <%- JSON.stringify(products || []) %>;
+
+        function selectStockAction(action) {
+            const nuevoTab = document.getElementById('tab-nuevo');
+            const completarTab = document.getElementById('tab-completar');
+            const verTab = document.getElementById('tab-ver');
+            const nuevoForm = document.getElementById('form-nuevo');
+            const completarForm = document.getElementById('form-completar');
+            const verForm = document.getElementById('form-ver');
+
+            // Guardar en localStorage la opción seleccionada
+            localStorage.setItem('stockTabActive', action);
+
+            // Remover activo de todos
+            nuevoTab.classList.remove('active');
+            completarTab.classList.remove('active');
+            verTab.classList.remove('active');
+            nuevoForm.classList.add('hidden');
+            completarForm.classList.add('hidden');
+            verForm.classList.add('hidden');
+
+            // Agregar activo al seleccionado
+            if (action === 'nuevo') {
+                nuevoTab.classList.add('active');
+                nuevoForm.classList.remove('hidden');
+            } else if (action === 'completar') {
+                completarTab.classList.add('active');
+                completarForm.classList.remove('hidden');
+            } else if (action === 'ver') {
+                verTab.classList.add('active');
+                verForm.classList.remove('hidden');
+            }
+        }
+
+        // Restaurar el tab seleccionado al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            const activeTab = localStorage.getItem('stockTabActive') || 'nuevo';
+            selectStockAction(activeTab);
+        });
+
+        function editProduct(producto) {
+            selectStockAction('nuevo');
+            document.getElementById('accion').value = 'editar';
+            document.getElementById('id_producto_editar').value = producto.id_producto || '';
+            document.getElementById('codigo_barras').value = producto.codigo_barras || '';
+            document.getElementById('nombre').value = producto.nombre || '';
+            document.getElementById('precio_costo').value = producto.precio_costo != null ? Number(producto.precio_costo).toFixed(2) : '0.00';
+            document.getElementById('precio_venta').value = producto.precio_venta != null ? Number(producto.precio_venta).toFixed(2) : '0.00';
+            document.getElementById('stock').value = producto.stock != null ? producto.stock : 0;
+            document.getElementById('id_tipo_producto').value = producto.id_tipo_producto || '';
+            document.getElementById('submit-nuevo').textContent = 'Guardar cambios';
+            document.getElementById('cancel-edit-button').style.display = 'inline-flex';
+            document.getElementById('codigo_barras').focus();
+        }
+
+        function cancelEditProduct() {
+            document.getElementById('accion').value = 'nuevo';
+            document.getElementById('id_producto_editar').value = '';
+            document.getElementById('codigo_barras').value = '';
+            document.getElementById('nombre').value = '';
+            document.getElementById('precio_costo').value = '0';
+            document.getElementById('precio_venta').value = '';
+            document.getElementById('stock').value = '';
+            document.getElementById('id_tipo_producto').value = '';
+            document.getElementById('submit-nuevo').textContent = 'Cargar producto';
+            document.getElementById('cancel-edit-button').style.display = 'none';
+            document.getElementById('codigo_barras').focus();
+        }
+
+        function handleStockBarcodeInput(value) {
+            const trimmed = value.trim();
+            const selectedField = document.getElementById('producto-seleccionado');
+            const hiddenId = document.getElementById('id_producto');
+
+            if (!trimmed) {
+                selectedField.value = '';
+                hiddenId.value = '';
+                return;
+            }
+
+            const found = stockProducts.find(producto => String(producto.codigo_barras).trim() === trimmed);
+            if (found) {
+                selectedField.value = `${found.nombre} (stock: ${found.stock || 0})`;
+                hiddenId.value = found.id_producto;
+            } else {
+                selectedField.value = 'No se encontró ningún producto con ese código';
+                hiddenId.value = '';
+            }
+        }
+    </script>
 </body>
 </html>
