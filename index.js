@@ -28,6 +28,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // Configurar sesiones
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 const sessionStore = new MySQLStore({}, db);
 app.use(session({
   key: 'dojoapp_session',
