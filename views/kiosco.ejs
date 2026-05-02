@@ -681,8 +681,12 @@
         let carrito = [];
         let medioPago = 'efectivo';
 
-        // Reloj
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+        // Reloj UTC-3 (Argentina)
+        setInterval(() => {
+            const now = new Date();
+            const utcMinus3 = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+            document.getElementById('clock').innerText = utcMinus3.toLocaleTimeString('es-AR');
+        }, 1000);
 
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');

@@ -29,9 +29,12 @@ function formatDateParts(value) {
         return { fecha: '-', dia: '-', hora: '-' };
     }
 
-    const fecha = date.toISOString().slice(0, 10).split('-').reverse().join('/');
-    const hora = date.toTimeString().slice(0, 8);
-    const dia = diasSemana[date.getDay()];
+    // Convertir a UTC-3 (Argentina)
+    const utcMinus3 = new Date(date.getTime() - (3 * 60 * 60 * 1000));
+
+    const fecha = utcMinus3.toISOString().slice(0, 10).split('-').reverse().join('/');
+    const hora = utcMinus3.toTimeString().slice(0, 8);
+    const dia = diasSemana[utcMinus3.getDay()];
     return { fecha, dia, hora };
 }
 
@@ -269,7 +272,7 @@ exports.registrarVenta = (req, res) => {
     let transferenciaValue = 0;
 
     if (medioPago === 'efectivo') {
-        efectivoValue = parseFloat(received) || montoTotal;
+        efectivoValue =  montoTotal;
         transferenciaValue = 0;
     } else if (medioPago === 'transferencia') {
         efectivoValue = 0;
