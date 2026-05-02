@@ -1,6 +1,6 @@
 const mysql = require('mysql2');
 
-//DEVELOPMENT LOCAL
+// //DEVELOPMENT LOCAL
 
 // const connection = mysql.createConnection({
 //   host: 'localhost',
@@ -20,7 +20,7 @@ const mysql = require('mysql2');
 // module.exports = connection;
 
 
-//PRODUCTION SERVER
+PRODUCTION SERVER
 const connection = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER,

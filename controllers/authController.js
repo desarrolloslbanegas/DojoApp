@@ -104,6 +104,15 @@ exports.logout = (req, res) => {
     });
   }
 
-  req.session = null;
-  res.redirect('/login');
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error al destruir la sesión:', err);
+      }
+      res.clearCookie('dojoapp_session');
+      res.redirect('/login');
+    });
+  } else {
+    res.redirect('/login');
+  }
 };

@@ -336,13 +336,17 @@
                     }
 
                     tbody.innerHTML = data.map(log => {
-                        const loginTime = log.login_time ? new Date(new Date(log.login_time).getTime() - (3 * 60 * 60 * 1000)).toLocaleString('es-AR') : '-';
-                        const logoutTime = log.logout_time ? new Date(new Date(log.logout_time).getTime() - (3 * 60 * 60 * 1000)).toLocaleString('es-AR') : '<span class="badge badge-success">Conectado</span>';
+                        const loginTime = log.login_time ? new Date(log.login_time).toLocaleString('es-AR', {
+                        timeZone: 'America/Argentina/Buenos_Aires'
+                    }) : '-';
+                        const logoutTime = log.logout_time ? new Date(log.logout_time).toLocaleString('es-AR', {
+                        timeZone: 'America/Argentina/Buenos_Aires'
+                    }) : '<span class="badge badge-success">Conectado</span>';
                         
                         let duracion = '-';
                         if (log.login_time && log.logout_time) {
-                            const login = new Date(new Date(log.login_time).getTime() - (3 * 60 * 60 * 1000));
-                            const logout = new Date(new Date(log.logout_time).getTime() - (3 * 60 * 60 * 1000));
+                            const login = new Date(log.login_time);
+                            const logout = new Date(log.logout_time);
                             const diffMs = logout - login;
                             const diffMins = Math.floor(diffMs / 60000);
                             const diffHrs = Math.floor(diffMins / 60);

@@ -681,12 +681,17 @@
         let carrito = [];
         let medioPago = 'efectivo';
 
-        // Reloj UTC-3 (Argentina)
-        setInterval(() => {
+        // Reloj en hora de Argentina
+        const updateClock = () => {
             const now = new Date();
-            const utcMinus3 = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-            document.getElementById('clock').innerText = utcMinus3.toLocaleTimeString('es-AR');
-        }, 1000);
+            document.getElementById('clock').innerText = now.toLocaleTimeString('es-AR', {
+                timeZone: 'America/Argentina/Buenos_Aires',
+                hour12: false
+            });
+        };
+
+        updateClock();
+        setInterval(updateClock, 1000);
 
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');

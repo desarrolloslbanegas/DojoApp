@@ -29,12 +29,16 @@ function formatDateParts(value) {
         return { fecha: '-', dia: '-', hora: '-' };
     }
 
-    // Convertir a UTC-3 (Argentina)
-    const utcMinus3 = new Date(date.getTime() - (3 * 60 * 60 * 1000));
-
-    const fecha = utcMinus3.toISOString().slice(0, 10).split('-').reverse().join('/');
-    const hora = utcMinus3.toTimeString().slice(0, 8);
-    const dia = diasSemana[utcMinus3.getDay()];
+    const optionsDate = { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' };
+    const fecha = date.toLocaleDateString('es-AR', optionsDate);
+    const hora = date.toLocaleTimeString('es-AR', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    const dia = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'long' }).format(date);
     return { fecha, dia, hora };
 }
 
