@@ -1,39 +1,32 @@
 const mysql = require('mysql2');
 
-// //DEVELOPMENT LOCAL
+const useMockData = process.env.USE_MOCK_DATA === 'true';
 
-// const connection = mysql.createConnection({
-//   host: 'localhost',
-//   user: 'root',
-//   password: '', 
-//   database: 'sistema_kiosco_panaderia'
-// });
+if (useMockData) {
+  module.exports = null;
+} else {
+  const requiredEnv = ['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME'];
+  const missing = requiredEnv.filter((key) => !process.env[key]);
 
-// connection.connect((err) => {
-//   if (err) {
-//     console.error('Error conectando a la base: ' + err.stack);
-//     return;
-//   }
-//   console.log('Conectado a MySQL local con el ID ' + connection.threadId);
-// });
-
-// module.exports = connection;
-
-
-PRODUCTION SERVER
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME
-});
-
-connection.connect((err) => {
-  if (err) {
-    console.error('Error conectando a la base:', err);
-    return;
+  if (missing.length > 0) {
+    console.error('Faltan variables de entorno para la base de datos:', missing.join(', '));
+    process.exit(1);
   }
-  console.log('Conectado a MySQL con ID ' + connection.threadId);
-});
 
-module.exports = connection;
+  const connection = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME
+  });
+
+  connection.connect((err) => {
+    if (err) {
+      console.error('Error conectando a la base:', err);
+      return;
+    }
+    console.log('Conectado a MySQL con ID ' + connection.threadId);
+  });
+
+  module.exports = connection;
+}

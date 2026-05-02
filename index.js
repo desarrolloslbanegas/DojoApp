@@ -31,7 +31,9 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
-const sessionStore = new MySQLStore({}, db);
+const sessionStore = process.env.USE_MOCK_DATA === 'true'
+  ? new session.MemoryStore()
+  : new MySQLStore({}, db);
 app.use(session({
   key: 'dojoapp_session',
   secret: process.env.SESSION_SECRET || 'mi_clave_secreta_muy_segura_para_dojo_app_2024',
