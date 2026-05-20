@@ -24,6 +24,7 @@
   "homepage": "https://github.com/desarrolloslbanegas/DojoApp#readme",
   "dependencies": {
     "dotenv": "^16.6.1",
+    "cookie-parser": "^1.4.6",
     "ejs": "^5.0.1",
     "express": "^5.2.1",
     "express-mysql-session": "^3.0.3",

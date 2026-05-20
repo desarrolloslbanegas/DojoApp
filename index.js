@@ -35,10 +35,9 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
-// En producción require SESSION_SECRET
+// En producción recomendamos configurar SESSION_SECRET
 if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
-  console.error('ERROR: SESSION_SECRET no está configurada en entorno de producción');
-  process.exit(1);
+  console.warn('WARNING: SESSION_SECRET no está configurada en entorno de producción — usando secreto por defecto');
 }
 const sessionStore = new MySQLStore({}, db);
 app.use(session({

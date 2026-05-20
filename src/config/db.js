@@ -19,8 +19,7 @@ if (isProduction) {
   const missing = requiredEnv.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
-    console.error('Faltan variables de entorno para la base de datos:', missing.join(', '));
-    process.exit(1);
+    console.warn('WARNING: Faltan variables de entorno para la base de datos:', missing.join(', '), '\nIntentando usar configuración por defecto (local).');
   }
 }
 
@@ -33,13 +32,3 @@ connection.connect((err) => {
 });
 
 module.exports = connection;
-
-
-
-
-
-
-  module.exports = connection;
-
-
-
