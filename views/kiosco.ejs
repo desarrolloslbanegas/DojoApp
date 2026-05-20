@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="/src/icono.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Venta Kiosco | Dojo System</title>
+    <title><%= title %> | Dojo System</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -550,10 +550,10 @@
         <nav class="nav-group">
             <span
                 style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; display: block;">Ventas</span>
-            <a href="/kiosco" class="nav-item active"><i data-lucide="shopping-cart"></i> Kiosco</a>
+            <a href="/kiosco" class="nav-item <%= basePath === '/kiosco' ? 'active' : '' %>"><i data-lucide="shopping-cart"></i> Kiosco</a>
 
             <% if (hasPanaderia) { %>
-                <a href="/panaderia" class="nav-item"><i data-lucide="utensils"></i> Panadería</a>
+                <a href="/panaderia" class="nav-item <%= basePath === '/panaderia' ? 'active' : '' %>"><i data-lucide="utensils"></i> Panadería</a>
             <% } %>
             <% if (esAdmin) { %>
                 <a href="/stock" class="nav-item"><i data-lucide="package"></i> Stock</a>
@@ -574,7 +574,7 @@
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 25px; flex-wrap: wrap;">
                     <div>
-                        <h1 style="margin: 0; color: #1e293b;">Kiosco</h1>
+                        <h1 style="margin: 0; color: #1e293b;"><%= title %></h1>
                     </div>
                     <span id="clock" style="font-weight: 600; color: #64748b;"></span>
                 </div>
@@ -614,7 +614,16 @@
                                 placeholder="0.00"></div>
                         <div class="form-group"><label>Stock</label><input type="number" id="in-stock" readonly
                                 placeholder="0"></div>
-                        <div class="form-group"><label>Cant.</label><input type="number" id="in-qty" value="1" min="1">
+                        <div class="form-group"><label>Cant.</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <% if (basePath === '/panaderia') { %>
+                                    <button type="button" class="qty-step-btn" onclick="adjustQty(-0.25)" style="background:#e2e8f0;border:none;border-radius:8px;padding:10px 12px;cursor:pointer;">-0.25</button>
+                                <% } %>
+                                <input type="number" id="in-qty" value="1" min="<%= basePath === '/panaderia' ? '0.25' : '1' %>" step="<%= basePath === '/panaderia' ? '0.25' : '1' %>" style="width:70px;text-align:center;">
+                                <% if (basePath === '/panaderia') { %>
+                                    <button type="button" class="qty-step-btn" onclick="adjustQty(0.25)" style="background:#e2e8f0;border:none;border-radius:8px;padding:10px 12px;cursor:pointer;">+0.25</button>
+                                <% } %>
+                            </div>
                         </div>
                         <div class="form-group" style="display: flex; align-items: flex-end;">
                             <button onclick="addToCart()"
@@ -699,6 +708,7 @@
         }
 
         // Búsqueda en el datalist
+        const basePath = '<%= typeof basePath !== 'undefined' ? basePath : '/kiosco' %>';
         let productSearchTimeout;
         const MIN_BARCODE_LENGTH = 8;
 
@@ -777,7 +787,7 @@
 
         async function fetchProduct(val) {
             try {
-                const res = await fetch(`/kiosco/buscar/${encodeURIComponent(val)}`);
+                const res = await fetch(`${basePath}/buscar/${encodeURIComponent(val)}`);
                 if (!res.ok) {
                     clearSearchFields();
                     return;
@@ -804,12 +814,20 @@
             }
         }
 
+        function adjustQty(delta) {
+            const qtyInput = document.getElementById('in-qty');
+            let qty = parseFloat(qtyInput.value.toString().replace(',', '.'));
+            if (isNaN(qty)) qty = 0;
+            qty = Math.max(parseFloat((qty + delta).toFixed(3)), parseFloat(qtyInput.min || '0'));
+            qtyInput.value = qty.toString();
+        }
+
         // Agregar al array del carrito
         function addToCart(auto = false) {
             const desc = document.getElementById('in-desc').value;
             const price = parseFloat(document.getElementById('in-price').value);
             const idProducto = document.getElementById('product-search').getAttribute('data-id');
-            let qty = parseInt(document.getElementById('in-qty').value);
+            let qty = parseFloat(document.getElementById('in-qty').value.toString().replace(',', '.'));
 
             if (isNaN(qty) || qty <= 0) {
                 qty = 1;
@@ -942,7 +960,7 @@
                 ...pagoData
             };
             try {
-                const res = await fetch('/kiosco/venta', {
+                const res = await fetch(`${basePath}/venta`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

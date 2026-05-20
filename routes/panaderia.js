@@ -3,5 +3,7 @@ const router = express.Router();
 const panaderiaController = require('../controllers/panaderiaController');
 
 router.get('/', panaderiaController.getPanaderia);
+router.get('/buscar/:nombre', panaderiaController.buscarProductoPorNombre);
+router.post('/venta', panaderiaController.registrarVenta);
 
 module.exports = router;

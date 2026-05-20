@@ -1,6 +1,6 @@
 const db = require('../src/config/db');
 const { notifyLowStock, STOCK_ALERT_THRESHOLD } = require('../src/services/stockAlertService');
-const { productosDemo } = require('../src/data/mockData');
+const PDFDocument = require('pdfkit');
 
 const barcodeCandidates = ['codigo_barras', 'codigo_barra', 'codigo', 'barcode', 'ean', 'gtin', 'upc'];
 let cachedBarcodeField = null;
@@ -42,6 +42,13 @@ function formatDateParts(value) {
     return { fecha, dia, hora };
 }
 
+function formatDateForPDF(dateString) {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-');
+    const shortYear = year.slice(-2);
+    return `${day}/${month}/${shortYear}`;
+}
+
 exports.getKiosco = (req, res) => {
     const usuario = req.session.usuarioNombre || 'Usuario';
     const idPerfil = req.session.idPerfil;
@@ -56,15 +63,10 @@ exports.getKiosco = (req, res) => {
         esAdmin,
         hasKiosco,
         hasPanaderia,
+        basePath: '/kiosco',
         ...payload
     });
     
-    // Modo de desarrollo: usar datos mock
-    if (process.env.USE_MOCK_DATA === 'true') {
-        return renderKiosco({ error: null, products: productosDemo });
-    }
-
-    // Modo producción: consultar BD
     const query = 'SELECT id_producto, nombre, precio_venta, stock FROM producto';
 
     db.query(query, (err, results) => {
@@ -86,23 +88,6 @@ exports.buscarProductoPorNombre = (req, res) => {
 
     const { nombre } = req.params;
     
-    // Modo de desarrollo: usar datos mock
-    if (process.env.USE_MOCK_DATA === 'true') {
-        const resultado = productosDemo.filter(p => 
-            p.nombre.toLowerCase().includes(nombre.toLowerCase()) ||
-            (p.codigo_barras && p.codigo_barras.toString() === nombre)
-        );
-        
-        console.log(nombre)
-        console.log(resultado)
-
-        if (resultado.length > 0) {
-            return res.json(resultado);
-        } else {
-            return res.status(404).json({ error: 'Producto no encontrado' });
-        }
-    }
-
     findBarcodeField((err, barcodeField) => {
         if (err) return res.status(500).json({ error: 'Error de DB' });
 
@@ -130,21 +115,11 @@ exports.buscarProductoPorNombre = (req, res) => {
 exports.getHistorialVentas = (req, res) => {
     const usuario = req.session.usuarioNombre || 'Usuario';
     const selectedFecha = req.query.fecha || '';
+    const selectedFechaInicio = req.query.fechaInicio || '';
+    const selectedFechaFin = req.query.fechaFin || '';
     const selectedMes = req.query.mes || '';
     const selectedVendedor = req.query.vendedor || '';
-
-    if (process.env.USE_MOCK_DATA === 'true') {
-        return res.render('historialVentas', {
-            title: 'Historial de Ventas',
-            usuario,
-            ventas: [],
-            vendedores: [],
-            selectedFecha,
-            selectedMes,
-            selectedVendedor,
-            resumen: { total: 0, ganancia: 0 }
-        });
-    }
+    const selectedFilter = req.query.filtro || (selectedFechaInicio || selectedFechaFin ? 'periodo' : selectedFecha ? 'dia' : selectedMes ? 'mes' : 'periodo');
 
     const vendedoresQuery = 'SELECT id_usuario, nombre FROM usuario WHERE id_perfil IN (1,2) ORDER BY nombre';
     db.query(vendedoresQuery, (err, vendedores) => {
@@ -155,8 +130,11 @@ exports.getHistorialVentas = (req, res) => {
                 ventas: [],
                 vendedores: [],
                 selectedFecha,
+                selectedFechaInicio,
+                selectedFechaFin,
                 selectedMes,
                 selectedVendedor,
+                selectedFilter,
                 resumen: { total: 0, ganancia: 0 }
             });
         }
@@ -164,7 +142,16 @@ exports.getHistorialVentas = (req, res) => {
         const whereClauses = [];
         const params = [];
 
-        if (selectedFecha) {
+        if (selectedFechaInicio && selectedFechaFin) {
+            whereClauses.push('DATE(v.fecha_hora) BETWEEN ? AND ?');
+            params.push(selectedFechaInicio, selectedFechaFin);
+        } else if (selectedFechaInicio) {
+            whereClauses.push('DATE(v.fecha_hora) >= ?');
+            params.push(selectedFechaInicio);
+        } else if (selectedFechaFin) {
+            whereClauses.push('DATE(v.fecha_hora) <= ?');
+            params.push(selectedFechaFin);
+        } else if (selectedFecha) {
             whereClauses.push('DATE(v.fecha_hora) = ?');
             params.push(selectedFecha);
         }
@@ -197,8 +184,11 @@ exports.getHistorialVentas = (req, res) => {
                     ventas: [],
                     vendedores,
                     selectedFecha,
+                    selectedFechaInicio,
+                    selectedFechaFin,
                     selectedMes,
                     selectedVendedor,
+                    selectedFilter,
                     resumen: { total: 0, ganancia: 0 }
                 });
             }
@@ -226,12 +216,19 @@ exports.getHistorialVentas = (req, res) => {
                 const precioCosto = parseFloat(row.precio_costo || 0);
                 const gananciaItem = (precioUnitario - precioCosto) * cantidad;
 
-                ventasMap[row.id_venta].items.push({
-                    producto: row.producto,
-                    cantidad,
-                    precio_unitario: precioUnitario,
-                    subtotal: precioUnitario * cantidad
-                });
+                const venta = ventasMap[row.id_venta];
+                const existingItem = venta.items.find(item => item.producto === row.producto);
+                if (existingItem) {
+                    existingItem.cantidad += cantidad;
+                    existingItem.subtotal += precioUnitario * cantidad;
+                } else {
+                    venta.items.push({
+                        producto: row.producto,
+                        cantidad,
+                        precio_unitario: precioUnitario,
+                        subtotal: precioUnitario * cantidad
+                    });
+                }
                 ventasMap[row.id_venta].ganancia += gananciaItem;
             });
 
@@ -250,12 +247,238 @@ exports.getHistorialVentas = (req, res) => {
                 ventas,
                 vendedores,
                 selectedFecha,
+                selectedFechaInicio,
+                selectedFechaFin,
                 selectedMes,
                 selectedVendedor,
+                selectedFilter,
                 resumen
             });
         });
     });
+};
+
+exports.exportHistorialPDF = (req, res) => {
+    const selectedFecha = req.query.fecha || '';
+    const selectedFechaInicio = req.query.fechaInicio || '';
+    const selectedFechaFin = req.query.fechaFin || '';
+    const selectedMes = req.query.mes || '';
+    const selectedVendedor = req.query.vendedor || '';
+
+    let vendedorName = '';
+    if (selectedVendedor) {
+        const getVendedorQuery = 'SELECT nombre FROM usuario WHERE id_usuario = ?';
+        db.query(getVendedorQuery, [selectedVendedor], (err, result) => {
+            if (err) {
+                return res.status(500).send('Error al obtener nombre del vendedor');
+            }
+            vendedorName = result.length > 0 ? result[0].nombre : selectedVendedor;
+            generatePDF();
+        });
+    } else {
+        generatePDF();
+    }
+
+    function generatePDF() {
+        const whereClauses = [];
+        const params = [];
+
+        if (selectedFechaInicio && selectedFechaFin) {
+            whereClauses.push('DATE(v.fecha_hora) BETWEEN ? AND ?');
+            params.push(selectedFechaInicio, selectedFechaFin);
+        } else if (selectedFechaInicio) {
+            whereClauses.push('DATE(v.fecha_hora) >= ?');
+            params.push(selectedFechaInicio);
+        } else if (selectedFechaFin) {
+            whereClauses.push('DATE(v.fecha_hora) <= ?');
+            params.push(selectedFechaFin);
+        } else if (selectedFecha) {
+            whereClauses.push('DATE(v.fecha_hora) = ?');
+            params.push(selectedFecha);
+        }
+
+        if (selectedMes) {
+            whereClauses.push("DATE_FORMAT(v.fecha_hora, '%Y-%m') = ?");
+            params.push(selectedMes);
+        }
+
+        if (selectedVendedor) {
+            whereClauses.push('v.id_vendedor = ?');
+            params.push(selectedVendedor);
+        }
+
+        const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+        const query = `SELECT v.id_venta, v.monto_total, v.efectivo, v.transferencia, v.fecha_hora, u.nombre AS vendedor,
+            dv.cantidad, dv.precio_unitario, p.precio_costo, p.nombre AS producto
+            FROM venta v
+            JOIN usuario u ON u.id_usuario = v.id_vendedor
+            JOIN detalle_venta dv ON dv.id_venta = v.id_venta
+            JOIN producto p ON p.id_producto = dv.id_producto
+            ${whereSql}
+            ORDER BY v.fecha_hora DESC`;
+
+        db.query(query, params, (err, results) => {
+            if (err) {
+                return res.status(500).send('Error al generar PDF');
+            }
+
+            const ventasMap = {};
+            results.forEach(row => {
+                if (!ventasMap[row.id_venta]) {
+                    const { fecha, dia, hora } = formatDateParts(row.fecha_hora);
+                    ventasMap[row.id_venta] = {
+                        id: row.id_venta,
+                        monto_total: parseFloat(row.monto_total),
+                        efectivo: parseFloat(row.efectivo) || 0,
+                        transferencia: parseFloat(row.transferencia) || 0,
+                        fecha,
+                        dia,
+                        hora,
+                        vendedor: row.vendedor,
+                        items: [],
+                        ganancia: 0
+                    };
+                }
+
+                const cantidad = parseInt(row.cantidad, 10);
+                const precioUnitario = parseFloat(row.precio_unitario);
+                const precioCosto = parseFloat(row.precio_costo || 0);
+                const gananciaItem = (precioUnitario - precioCosto) * cantidad;
+
+                const venta = ventasMap[row.id_venta];
+                const existingItem = venta.items.find(item => item.producto === row.producto);
+                if (existingItem) {
+                    existingItem.cantidad += cantidad;
+                    existingItem.subtotal += precioUnitario * cantidad;
+                } else {
+                    venta.items.push({
+                        producto: row.producto,
+                        cantidad,
+                        precio_unitario: precioUnitario,
+                        subtotal: precioUnitario * cantidad
+                    });
+                }
+                ventasMap[row.id_venta].ganancia += gananciaItem;
+            });
+
+            const ventas = Object.values(ventasMap);
+            const resumen = ventas.reduce((acc, venta) => {
+                acc.total += venta.monto_total;
+                acc.efectivo += venta.efectivo;
+                acc.transferencia += venta.transferencia;
+                acc.ganancia += venta.ganancia;
+                return acc;
+            }, { total: 0, efectivo: 0, transferencia: 0, ganancia: 0 });
+
+            const doc = new PDFDocument({ 
+                size: 'A4', 
+                layout: 'portrait', 
+                margins: { top: 35, bottom: 35, left: 35, right: 50 }
+            });
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename="historial-ventas.pdf"');
+            doc.pipe(res);
+
+            doc.font('Helvetica-Bold').fontSize(18).fillColor('#000').text('Historial de Ventas', { align: 'center' });
+            doc.moveDown(0.5);
+
+            const vendedorLine = selectedVendedor ? `Vendedor: ${vendedorName}` : 'Vendedor: Todos';
+            let periodoText = 'Periodo: Todos los periodos';
+            if (selectedFechaInicio && selectedFechaFin) {
+                periodoText = `Periodo: ${formatDateForPDF(selectedFechaInicio)} al ${formatDateForPDF(selectedFechaFin)}`;
+            } else if (selectedFechaInicio) {
+                periodoText = `Periodo desde: ${formatDateForPDF(selectedFechaInicio)}`;
+            } else if (selectedFechaFin) {
+                periodoText = `Periodo hasta: ${formatDateForPDF(selectedFechaFin)}`;
+            } else if (selectedFecha) {
+                periodoText = `Periodo: ${formatDateForPDF(selectedFecha)}`;
+            } else if (selectedMes) {
+                const [year, month] = selectedMes.split('-');
+                periodoText = `Periodo: ${month}/${year.slice(-2)}`;
+            }
+
+            doc.font('Helvetica').fontSize(11).fillColor('#000').text(vendedorLine, { align: 'left' });
+            doc.text(periodoText, { align: 'left' });
+            doc.moveDown(1);
+
+            const stats = [
+                { label: 'Total de registros', value: ventas.length },
+                { label: 'Total ventas', value: `$${resumen.total.toFixed(2)}` },
+                { label: 'Efectivo', value: `$${resumen.efectivo.toFixed(2)}` },
+                { label: 'Transferencia', value: `$${resumen.transferencia.toFixed(2)}` },
+                { label: 'Ganancia total', value: `$${resumen.ganancia.toFixed(2)}` }
+            ];
+
+            doc.font('Helvetica-Bold').fontSize(10).fillColor('#000');
+            stats.forEach(stat => {
+                doc.text(`${stat.label}: `, { continued: true });
+                doc.font('Helvetica').text(stat.value);
+                doc.font('Helvetica-Bold');
+            });
+            doc.moveDown(1);
+
+            const marginLeft = doc.page.margins.left;
+            const colWidths = [35, 50, 40, 110, 45, 45, 55, 45, 60];
+            const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
+            const headers = ['Venta', 'Fecha', 'Hora', 'Vendedor', 'Total', 'Efectivo', 'Transferencia', 'Ganancia', 'Items'];
+
+            const drawHeader = () => {
+                doc.font('Helvetica-Bold').fontSize(9).fillColor('#000');
+                let x = marginLeft;
+                const yHeader = doc.y;
+                headers.forEach((header, i) => {
+                    doc.text(header, x, yHeader, { width: colWidths[i], align: 'left' });
+                    x += colWidths[i];
+                });
+                doc.moveDown(1);
+                doc.strokeColor('#000').lineWidth(0.5).moveTo(marginLeft, doc.y).lineTo(marginLeft + tableWidth, doc.y).stroke();
+                doc.moveDown(0.2);
+            };
+
+            drawHeader();
+            let y = doc.y;
+            doc.font('Helvetica').fontSize(9).fillColor('#000');
+
+            ventas.forEach((venta, index) => {
+                const row = [
+                    `#${venta.id}`,
+                    venta.fecha,
+                    venta.hora,
+                    venta.vendedor,
+                    `$${venta.monto_total.toFixed(2)}`,
+                    `$${venta.efectivo.toFixed(2)}`,
+                    `$${venta.transferencia.toFixed(2)}`,
+                    `$${venta.ganancia.toFixed(2)}`,
+                    venta.items.map(item => `${item.producto} x${item.cantidad}`).join(', ')
+                ];
+
+                const rowHeights = row.map((cell, i) => doc.heightOfString(cell, { width: colWidths[i] - 4 }));
+                const rowHeight = Math.max(...rowHeights) + 10;
+
+                if (y + rowHeight > doc.page.height - doc.page.margins.bottom) {
+                    doc.addPage({ size: 'A4', layout: 'portrait', margin: 40 });
+                    drawHeader();
+                    y = doc.y;
+                    doc.font('Helvetica').fontSize(9).fillColor('#000');
+                }
+
+                if (index % 2 === 0) {
+                    doc.fillColor('#f2f2f2').rect(marginLeft, y - 2, tableWidth, rowHeight).fill();
+                    doc.fillColor('#000');
+                }
+
+                let x = marginLeft;
+                row.forEach((cell, i) => {
+                    doc.text(cell, x, y, { width: colWidths[i] - 4, align: 'left' });
+                    x += colWidths[i];
+                });
+
+                y += rowHeight;
+            });
+
+            doc.end();
+        });
+    }
 };
 
 exports.registrarVenta = (req, res) => {
@@ -288,10 +511,6 @@ exports.registrarVenta = (req, res) => {
 
     if (!vendedorId) {
         return res.status(403).json({ error: 'Usuario no autenticado.' });
-    }
-
-    if (process.env.USE_MOCK_DATA === 'true') {
-        return res.json({ success: true, message: 'Venta registrada en modo demo.' });
     }
 
     const ventaItems = [];

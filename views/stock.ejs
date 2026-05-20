@@ -136,6 +136,10 @@
                 <div class="form-section hidden" id="form-ver" style="padding: 0; background: transparent; border: none;">
                     <div class="table-wrapper" style="padding: 20px;">
                         <h2 style="margin-top: 0; margin-bottom: 20px;">Productos existentes</h2>
+                        <div class="field" style="max-width: 420px; margin-bottom: 20px;">
+                            <label for="stock-search">Buscar artículos</label>
+                            <input type="search" id="stock-search" placeholder="Buscar por nombre, código o tipo" oninput="filterStockProducts()" />
+                        </div>
                 <table>
                     <thead>
                         <tr>
@@ -149,7 +153,7 @@
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="stock-table-body">
                         <% if (!products || products.length === 0) { %>
                             <tr>
                                 <td colspan="8" class="right">No hay productos registrados.</td>
@@ -181,6 +185,54 @@
         lucide.createIcons();
 
         const stockProducts = <%- JSON.stringify(products || []) %>;
+
+        function renderStockTable(productsToRender) {
+            const tbody = document.getElementById('stock-table-body');
+            if (!tbody) return;
+
+            const list = Array.isArray(productsToRender) ? productsToRender : [];
+            if (list.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="right">No hay productos registrados.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = list.map(producto => {
+                return `
+                    <tr>
+                        <td>${producto.id_producto}</td>
+                        <td>${producto.nombre}</td>
+                        <td>${producto.codigo_barras}</td>
+                        <td>${producto.tipo || 'sin tipo'}</td>
+                        <td class="right">$${Number(producto.precio_costo || 0).toFixed(2)}</td>
+                        <td class="right">$${Number(producto.precio_venta || 0).toFixed(2)}</td>
+                        <td class="right">${producto.stock}</td>
+                        <td>
+                            <button type="button" class="button button-orange" onclick='editProduct(${JSON.stringify(producto)})'>Editar</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterStockProducts() {
+            const query = document.getElementById('stock-search')?.value.trim().toLowerCase() || '';
+            if (!query) {
+                renderStockTable(stockProducts);
+                return;
+            }
+
+            const filtered = stockProducts.filter(producto => {
+                const tipo = producto.tipo || '';
+                return [producto.nombre, String(producto.codigo_barras), tipo]
+                    .some(value => String(value).toLowerCase().includes(query));
+            });
+
+            renderStockTable(filtered);
+        }
 
         function selectStockAction(action) {
             const nuevoTab = document.getElementById('tab-nuevo');
@@ -218,6 +270,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const activeTab = localStorage.getItem('stockTabActive') || 'nuevo';
             selectStockAction(activeTab);
+            renderStockTable(stockProducts);
         });
 
         function editProduct(producto) {

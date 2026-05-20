@@ -15,6 +15,10 @@
         .panel { background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 20px; margin-bottom: 24px; }
         .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: end; }
         .field { display: flex; flex-direction: column; gap: 8px; }
+        .filter-block { display: none; }
+        .filter-block.active { display: flex; }
+        .period-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .period-row input { flex: 1; min-width: 150px; }
         .field label { font-size: 0.9rem; color: #475569; }
         .field input, .field select { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; color: #0f172a; }
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
@@ -41,13 +45,29 @@
         <a href="/menu-principal" class="button"><i data-lucide="arrow-left"></i> Volver al menú</a>
     </header>
     <main>
+        <% const currentFilter = typeof selectedFilter !== 'undefined' ? selectedFilter : 'periodo'; %>
         <div class="panel">
             <form class="filters" method="GET" action="/kiosco/historial">
                 <div class="field">
+                    <label for="filtro">Tipo de filtro</label>
+                    <select id="filtro" name="filtro">
+                        <option value="periodo" <%= currentFilter === 'periodo' ? 'selected' : '' %>>Filtrar por período</option>
+                        <option value="dia" <%= currentFilter === 'dia' ? 'selected' : '' %>>Filtrar por día</option>
+                        <option value="mes" <%= currentFilter === 'mes' ? 'selected' : '' %>>Filtrar por mes</option>
+                    </select>
+                </div>
+                <div class="field filter-block <%= currentFilter === 'periodo' ? 'active' : '' %>" id="filtro-periodo">
+                    <label>Filtrar por período</label>
+                    <div class="period-row">
+                        <input type="date" id="fechaInicio" name="fechaInicio" value="<%= selectedFechaInicio || '' %>" placeholder="Fecha inicio">
+                        <input type="date" id="fechaFin" name="fechaFin" value="<%= selectedFechaFin || '' %>" placeholder="Fecha fin">
+                    </div>
+                </div>
+                <div class="field filter-block <%= currentFilter === 'dia' ? 'active' : '' %>" id="filtro-dia">
                     <label for="fecha">Filtrar por día</label>
                     <input type="date" id="fecha" name="fecha" value="<%= selectedFecha || '' %>">
                 </div>
-                <div class="field">
+                <div class="field filter-block <%= currentFilter === 'mes' ? 'active' : '' %>" id="filtro-mes">
                     <label for="mes">Filtrar por mes</label>
                     <input type="month" id="mes" name="mes" value="<%= selectedMes || '' %>">
                 </div>
@@ -64,7 +84,19 @@
                 </div>
                 <div class="field">
                     <label>&nbsp;</label>
-                    <button class="button" style="width:100%; justify-content:center;">Filtrar</button>
+                    <div style="display: flex; gap: 16px; width: 100%; justify-content: center; flex-wrap: wrap;">
+                        <button class="button">Filtrar</button>
+                <% if (selectedFecha || selectedMes || selectedFechaInicio || selectedFechaFin || selectedVendedor) { %>
+                        <a href="/kiosco/historial/pdf?<% 
+                            let params = [];
+                            if (selectedFecha) params.push('fecha=' + encodeURIComponent(selectedFecha));
+                            if (selectedMes) params.push('mes=' + encodeURIComponent(selectedMes));
+                            if (selectedFechaInicio) params.push('fechaInicio=' + encodeURIComponent(selectedFechaInicio));
+                            if (selectedFechaFin) params.push('fechaFin=' + encodeURIComponent(selectedFechaFin));
+                            if (selectedVendedor) params.push('vendedor=' + encodeURIComponent(selectedVendedor));
+                        %><%= params.join('&') %>" class="button" style="background: #10b981;"><i data-lucide="download"></i> Exportar PDF</a>
+                        <% } %>
+                    </div>
                 </div>
             </form>
             <div class="summary-grid">
@@ -128,6 +160,38 @@
             </div>
         <% } %>
     </main>
-    <script>lucide.createIcons();</script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            const filtroSelect = document.getElementById('filtro');
+            const filtroPeriodo = document.getElementById('filtro-periodo');
+            const filtroDia = document.getElementById('filtro-dia');
+            const filtroMes = document.getElementById('filtro-mes');
+            const fechaInicioInput = document.getElementById('fechaInicio');
+            const fechaFinInput = document.getElementById('fechaFin');
+            const fechaInput = document.getElementById('fecha');
+            const mesInput = document.getElementById('mes');
+
+            function updateFilterSections() {
+                const value = filtroSelect.value;
+                const showPeriodo = value === 'periodo';
+                const showDia = value === 'dia';
+                const showMes = value === 'mes';
+
+                filtroPeriodo.classList.toggle('active', showPeriodo);
+                filtroDia.classList.toggle('active', showDia);
+                filtroMes.classList.toggle('active', showMes);
+
+                fechaInicioInput.disabled = !showPeriodo;
+                fechaFinInput.disabled = !showPeriodo;
+                fechaInput.disabled = !showDia;
+                mesInput.disabled = !showMes;
+            }
+
+            filtroSelect.addEventListener('change', updateFilterSections);
+            updateFilterSections();
+        });
+    </script>
 </body>
 </html>

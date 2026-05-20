@@ -4,16 +4,6 @@ exports.getStock = (req, res) => {
     const mensaje = req.query.mensaje || '';
     const tipoMensaje = req.query.tipo || 'info';
 
-    if (process.env.USE_MOCK_DATA === 'true') {
-        return res.render('stock', {
-            title: 'Stock',
-            products: [],
-            tipos: [],
-            mensaje,
-            tipoMensaje
-        });
-    }
-
     const productosQuery = `SELECT p.id_producto, p.nombre, p.codigo_barras, p.precio_costo, p.precio_venta, p.stock, tp.descripcion AS tipo
         FROM producto p
         LEFT JOIN tipo_producto tp ON tp.id_tipo_producto = p.id_tipo_producto

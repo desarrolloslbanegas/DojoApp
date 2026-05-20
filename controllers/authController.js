@@ -22,25 +22,6 @@ exports.login = (req, res) => {
     });
   }
 
-  // Modo de desarrollo: loguear sin BD
-  if (process.env.USE_MOCK_DATA === 'true') {
-    // Crear sesión de demostración
-    req.session.usuarioId = 1;
-    req.session.usuarioNombre = nombre;
-    req.session.idPerfil = 1; // Admin por defecto en desarrollo
-
-    // Registrar login en la tabla log (modo mock)
-    const insertLog = 'INSERT INTO log (user_id, login_time) VALUES (?, NOW())';
-    db.query(insertLog, [1], (err) => {
-      if (err) {
-        console.error('Error al registrar login en log:', err);
-      }
-    });
-
-    return res.redirect('/menu-principal');
-  }
-
-  // Modo producción: consultar a la BD
   const query = 'SELECT id_usuario, nombre, password, id_perfil FROM usuario WHERE nombre = ?';
 
   db.query(query, [nombre], (err, results) => {
@@ -94,8 +75,8 @@ exports.login = (req, res) => {
 exports.logout = (req, res) => {
   const usuarioId = req.session.usuarioId;
 
-  if (usuarioId) {
-    // Actualizar logout_time en la tabla log
+  if (usuarioId && db) {
+    // Actualizar logout_time en la tabla log (solo si DB existe)
     const updateLog = 'UPDATE log SET logout_time = NOW() WHERE user_id = ? AND logout_time IS NULL ORDER BY login_time DESC LIMIT 1';
     db.query(updateLog, [usuarioId], (err) => {
       if (err) {
