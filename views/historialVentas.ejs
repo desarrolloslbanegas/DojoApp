@@ -83,10 +83,14 @@
                     </select>
                 </div>
                 <div class="field">
+                    <label for="item">Buscar por item</label>
+                    <input type="text" id="item" name="item" placeholder="Nombre del producto" value="<%= selectedItem || '' %>">
+                </div>
+                <div class="field">
                     <label>&nbsp;</label>
                     <div style="display: flex; gap: 16px; width: 100%; justify-content: center; flex-wrap: wrap;">
                         <button class="button">Filtrar</button>
-                <% if (selectedFecha || selectedMes || selectedFechaInicio || selectedFechaFin || selectedVendedor) { %>
+                <% if (selectedFecha || selectedMes || selectedFechaInicio || selectedFechaFin || selectedVendedor || selectedItem) { %>
                         <a href="/kiosco/historial/pdf?<% 
                             let params = [];
                             if (selectedFecha) params.push('fecha=' + encodeURIComponent(selectedFecha));
@@ -94,6 +98,7 @@
                             if (selectedFechaInicio) params.push('fechaInicio=' + encodeURIComponent(selectedFechaInicio));
                             if (selectedFechaFin) params.push('fechaFin=' + encodeURIComponent(selectedFechaFin));
                             if (selectedVendedor) params.push('vendedor=' + encodeURIComponent(selectedVendedor));
+                            if (selectedItem) params.push('item=' + encodeURIComponent(selectedItem));
                         %><%= params.join('&') %>" class="button" style="background: #10b981;"><i data-lucide="download"></i> Exportar PDF</a>
                         <% } %>
                     </div>

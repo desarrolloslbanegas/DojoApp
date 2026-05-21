@@ -119,6 +119,7 @@ exports.getHistorialVentas = (req, res) => {
     const selectedFechaFin = req.query.fechaFin || '';
     const selectedMes = req.query.mes || '';
     const selectedVendedor = req.query.vendedor || '';
+    const selectedItem = req.query.item || '';
     const selectedFilter = req.query.filtro || (selectedFechaInicio || selectedFechaFin ? 'periodo' : selectedFecha ? 'dia' : selectedMes ? 'mes' : 'periodo');
 
     const vendedoresQuery = 'SELECT id_usuario, nombre FROM usuario WHERE id_perfil IN (1,2) ORDER BY nombre';
@@ -166,6 +167,11 @@ exports.getHistorialVentas = (req, res) => {
             params.push(selectedVendedor);
         }
 
+        if (selectedItem) {
+            whereClauses.push('p.nombre LIKE ?');
+            params.push(`%${selectedItem}%`);
+        }
+
         const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
         const query = `SELECT v.id_venta, v.monto_total, v.efectivo, v.transferencia, v.fecha_hora, u.nombre AS vendedor,
             dv.cantidad, dv.precio_unitario, p.precio_costo, p.nombre AS producto
@@ -188,6 +194,7 @@ exports.getHistorialVentas = (req, res) => {
                     selectedFechaFin,
                     selectedMes,
                     selectedVendedor,
+                    selectedItem,
                     selectedFilter,
                     resumen: { total: 0, ganancia: 0 }
                 });
@@ -251,6 +258,7 @@ exports.getHistorialVentas = (req, res) => {
                 selectedFechaFin,
                 selectedMes,
                 selectedVendedor,
+                selectedItem,
                 selectedFilter,
                 resumen
             });
@@ -264,6 +272,7 @@ exports.exportHistorialPDF = (req, res) => {
     const selectedFechaFin = req.query.fechaFin || '';
     const selectedMes = req.query.mes || '';
     const selectedVendedor = req.query.vendedor || '';
+    const selectedItem = req.query.item || '';
 
     let vendedorName = '';
     if (selectedVendedor) {
@@ -305,6 +314,11 @@ exports.exportHistorialPDF = (req, res) => {
         if (selectedVendedor) {
             whereClauses.push('v.id_vendedor = ?');
             params.push(selectedVendedor);
+        }
+
+        if (selectedItem) {
+            whereClauses.push('p.nombre LIKE ?');
+            params.push(`%${selectedItem}%`);
         }
 
         const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
