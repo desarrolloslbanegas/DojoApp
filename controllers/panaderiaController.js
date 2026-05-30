@@ -1,5 +1,6 @@
 const db = require('../src/config/db');
 const { notifyLowStock } = require('../src/services/stockAlertService');
+const { registrarVentaCancelada } = require('../src/services/cancelledSaleService');
 
 const barcodeCandidates = ['codigo_barras', 'codigo_barra', 'codigo', 'barcode', 'ean', 'gtin', 'upc'];
 let cachedBarcodeField = null;
@@ -234,3 +235,5 @@ exports.registrarVenta = (req, res) => {
     });
   });
 };
+
+exports.registrarVentaCancelada = registrarVentaCancelada('panaderia');

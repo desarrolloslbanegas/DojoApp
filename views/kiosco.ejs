@@ -677,8 +677,8 @@
                                 value="$0,00"></div>
                     </div>
 
-                    <button class="btn-confirm-action" onclick="confirmarVentaFinal()">
-                        CONFIRMAR VENTA (F10)
+                    <button id="confirm-sale-btn" class="btn-confirm-action" onclick="confirmarVentaFinal()">
+                        CONFIRMAR VENTA
                     </button>
                 </div>
             </section>
@@ -689,6 +689,7 @@
         lucide.createIcons();
         let carrito = [];
         let medioPago = 'efectivo';
+        let ventaEnProgreso = false;
 
         // Reloj en hora de Argentina
         const updateClock = () => {
@@ -885,7 +886,48 @@
         }
 
         function removeItem(id) { carrito = carrito.filter(i => i.id !== id); actualizarTablaVisual(); }
-        function clearCart() { if (confirm("¿Vaciar venta?")) { carrito = []; actualizarTablaVisual(); } }
+
+        async function registrarVentaCancelada() {
+            if (carrito.length === 0) return;
+
+            const total = parseFloat(document.getElementById('total-val').innerText.replace('$', '')) || 0;
+            const payload = {
+                items: carrito,
+                total,
+                medioPago,
+                motivo: 'VACIAR'
+            };
+
+            if (medioPago === 'mixto') {
+                payload.cash = parseFloat(document.getElementById('mix-cash').value) || 0;
+                payload.transfer = parseFloat(document.getElementById('mix-transfer').value) || 0;
+            } else if (medioPago === 'efectivo') {
+                const received = parseFloat(document.getElementById('cash-received').value) || 0;
+                payload.received = received;
+                payload.change = Number(Math.max(received - total, 0).toFixed(2));
+            }
+
+            try {
+                const res = await fetch(`${basePath}/venta-cancelada`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    console.error('No se pudo registrar la venta cancelada.');
+                }
+            } catch (error) {
+                console.error('Error al registrar la venta cancelada:', error);
+            }
+        }
+
+        async function clearCart() {
+            if (!confirm("¿Vaciar venta?")) return;
+            await registrarVentaCancelada();
+            carrito = [];
+            actualizarTablaVisual();
+        }
 
         function setPay(type, el) {
             medioPago = type;
@@ -936,6 +978,8 @@
 
         // Envío al Backend
         async function confirmarVentaFinal() {
+            if (ventaEnProgreso) return;
+            const confirmButton = document.getElementById('confirm-sale-btn');
             if (carrito.length === 0) return alert("El carrito está vacío.");
 
             let total = parseFloat(document.getElementById('total-val').innerText.replace('$', ''));
@@ -953,6 +997,10 @@
                 pagoData.received = received;
                 pagoData.change = Number((received - total).toFixed(2));
             }
+
+            ventaEnProgreso = true;
+            confirmButton.disabled = true;
+            confirmButton.style.cursor = 'not-allowed';
 
             const payload = {
                 items: carrito,
@@ -973,9 +1021,15 @@
                     }, 1500);
                 } else {
                     alert(data.error || "Error al procesar la venta.");
+                    ventaEnProgreso = false;
+                    confirmButton.disabled = false;
+                    confirmButton.style.cursor = 'pointer';
                 }
             } catch (error) {
                 alert("Error al conectar con el servidor.");
+                ventaEnProgreso = false;
+                confirmButton.disabled = false;
+                confirmButton.style.cursor = 'pointer';
             }
         }
 

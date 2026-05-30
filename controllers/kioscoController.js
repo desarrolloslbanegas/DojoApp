@@ -1,5 +1,6 @@
 const db = require('../src/config/db');
 const { notifyLowStock, STOCK_ALERT_THRESHOLD } = require('../src/services/stockAlertService');
+const { registrarVentaCancelada } = require('../src/services/cancelledSaleService');
 const PDFDocument = require('pdfkit');
 
 const barcodeCandidates = ['codigo_barras', 'codigo_barra', 'codigo', 'barcode', 'ean', 'gtin', 'upc'];
@@ -40,6 +41,17 @@ function formatDateParts(value) {
     });
     const dia = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'long' }).format(date);
     return { fecha, dia, hora };
+}
+
+function parseCancelledItems(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        return [];
+    }
 }
 
 function formatDateForPDF(dateString) {
@@ -114,15 +126,18 @@ exports.buscarProductoPorNombre = (req, res) => {
 
 exports.getHistorialVentas = (req, res) => {
     const usuario = req.session.usuarioNombre || 'Usuario';
-    const selectedFecha = req.query.fecha || '';
+    const today = new Date();
+    const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const selectedFilter = req.query.filtro || 'dia';
+    const selectedFecha = req.query.fecha || (selectedFilter === 'dia' ? localToday : '');
     const selectedFechaInicio = req.query.fechaInicio || '';
     const selectedFechaFin = req.query.fechaFin || '';
     const selectedMes = req.query.mes || '';
     const selectedVendedor = req.query.vendedor || '';
     const selectedItem = req.query.item || '';
-    const selectedFilter = req.query.filtro || (selectedFechaInicio || selectedFechaFin ? 'periodo' : selectedFecha ? 'dia' : selectedMes ? 'mes' : 'periodo');
+    const selectedVista = req.query.vista || 'ventas';
 
-    const vendedoresQuery = 'SELECT id_usuario, nombre FROM usuario WHERE id_perfil IN (1,2) ORDER BY nombre';
+    const vendedoresQuery = 'SELECT id_usuario, nombre FROM usuario WHERE id_perfil IN (1,2,3,4) ORDER BY nombre';
     db.query(vendedoresQuery, (err, vendedores) => {
         if (err) {
             return res.render('historialVentas', {
@@ -130,19 +145,29 @@ exports.getHistorialVentas = (req, res) => {
                 usuario,
                 ventas: [],
                 vendedores: [],
+                productos: [],
                 selectedFecha,
                 selectedFechaInicio,
                 selectedFechaFin,
                 selectedMes,
                 selectedVendedor,
+                selectedItem,
+                selectedVista,
                 selectedFilter,
-                resumen: { total: 0, ganancia: 0 }
+                resumen: { total: 0, efectivo: 0, transferencia: 0, ganancia: 0 },
+                ventasCanceladas: [],
+                resumenCanceladas: { total: 0, cantidad: 0 }
             });
         }
 
-        const whereClauses = [];
-        const params = [];
+        const productosQuery = 'SELECT DISTINCT nombre FROM producto ORDER BY nombre';
+        db.query(productosQuery, (err, productos) => {
+            if (err) {
+                productos = [];
+            }
 
+            const whereClauses = [];
+            const params = [];
         if (selectedFechaInicio && selectedFechaFin) {
             whereClauses.push('DATE(v.fecha_hora) BETWEEN ? AND ?');
             params.push(selectedFechaInicio, selectedFechaFin);
@@ -189,14 +214,18 @@ exports.getHistorialVentas = (req, res) => {
                     usuario,
                     ventas: [],
                     vendedores,
+                    productos,
                     selectedFecha,
                     selectedFechaInicio,
                     selectedFechaFin,
                     selectedMes,
                     selectedVendedor,
                     selectedItem,
+                    selectedVista,
                     selectedFilter,
-                    resumen: { total: 0, ganancia: 0 }
+                    resumen: { total: 0, efectivo: 0, transferencia: 0, ganancia: 0 },
+                    ventasCanceladas: [],
+                    resumenCanceladas: { total: 0, cantidad: 0 }
                 });
             }
 
@@ -248,20 +277,95 @@ exports.getHistorialVentas = (req, res) => {
                 return acc;
             }, { total: 0, efectivo: 0, transferencia: 0, ganancia: 0 });
 
-            res.render('historialVentas', {
-                title: 'Historial de Ventas',
-                usuario,
-                ventas,
-                vendedores,
-                selectedFecha,
-                selectedFechaInicio,
-                selectedFechaFin,
-                selectedMes,
-                selectedVendedor,
-                selectedItem,
-                selectedFilter,
-                resumen
+            const cancelWhereClauses = [];
+            const cancelParams = [];
+
+            if (selectedFechaInicio && selectedFechaFin) {
+                cancelWhereClauses.push('DATE(vc.fecha_hora) BETWEEN ? AND ?');
+                cancelParams.push(selectedFechaInicio, selectedFechaFin);
+            } else if (selectedFechaInicio) {
+                cancelWhereClauses.push('DATE(vc.fecha_hora) >= ?');
+                cancelParams.push(selectedFechaInicio);
+            } else if (selectedFechaFin) {
+                cancelWhereClauses.push('DATE(vc.fecha_hora) <= ?');
+                cancelParams.push(selectedFechaFin);
+            } else if (selectedFecha) {
+                cancelWhereClauses.push('DATE(vc.fecha_hora) = ?');
+                cancelParams.push(selectedFecha);
+            }
+
+            if (selectedMes) {
+                cancelWhereClauses.push("DATE_FORMAT(vc.fecha_hora, '%Y-%m') = ?");
+                cancelParams.push(selectedMes);
+            }
+
+            if (selectedVendedor) {
+                cancelWhereClauses.push('vc.id_vendedor = ?');
+                cancelParams.push(selectedVendedor);
+            }
+
+            if (selectedItem) {
+                cancelWhereClauses.push('vc.items_json LIKE ?');
+                cancelParams.push(`%${selectedItem}%`);
+            }
+
+            const cancelWhereSql = cancelWhereClauses.length ? `WHERE ${cancelWhereClauses.join(' AND ')}` : '';
+            const cancelQuery = `
+                SELECT vc.id_venta_cancelada, vc.origen, vc.monto_total, vc.cantidad_items, vc.medio_pago,
+                    vc.efectivo, vc.transferencia, vc.fecha_hora, vc.id_vendedor, vc.vendedor_nombre,
+                    vc.items_json, vc.motivo, u.nombre AS vendedor
+                FROM ventas_canceladas vc
+                LEFT JOIN usuario u ON u.id_usuario = vc.id_vendedor
+                ${cancelWhereSql}
+                ORDER BY vc.fecha_hora DESC
+            `;
+
+            db.query(cancelQuery, cancelParams, (err, cancelResults) => {
+                const ventasCanceladas = err ? [] : cancelResults.map(row => {
+                    const { fecha, dia, hora } = formatDateParts(row.fecha_hora);
+                    return {
+                        id: row.id_venta_cancelada,
+                        origen: row.origen,
+                        monto_total: parseFloat(row.monto_total) || 0,
+                        cantidad_items: parseFloat(row.cantidad_items) || 0,
+                        medio_pago: row.medio_pago || '-',
+                        efectivo: parseFloat(row.efectivo) || 0,
+                        transferencia: parseFloat(row.transferencia) || 0,
+                        fecha,
+                        dia,
+                        hora,
+                        vendedor: row.vendedor || row.vendedor_nombre || '-',
+                        items: parseCancelledItems(row.items_json),
+                        motivo: row.motivo || '-'
+                    };
+                });
+
+                const resumenCanceladas = ventasCanceladas.reduce((acc, venta) => {
+                    acc.total += venta.monto_total;
+                    acc.cantidad += 1;
+                    return acc;
+                }, { total: 0, cantidad: 0 });
+
+                res.render('historialVentas', {
+                    title: 'Historial de Ventas',
+                    usuario,
+                    ventas,
+                    vendedores,
+                    productos,
+                    selectedFecha,
+                    selectedFechaInicio,
+                    selectedFechaFin,
+                    selectedMes,
+                    selectedVendedor,
+                    selectedItem,
+                    selectedVista,
+                    selectedFilter,
+                    resumen,
+                    ventasCanceladas,
+                    resumenCanceladas
+                });
             });
+        });
         });
     });
 };
@@ -649,6 +753,73 @@ exports.registrarVenta = (req, res) => {
                     runStockUpdates(0);
                 });
             });
+        });
+    });
+};
+
+exports.registrarVentaCancelada = registrarVentaCancelada('kiosco');
+
+exports.eliminarVenta = (req, res) => {
+    const ventaId = parseInt(req.params.id, 10);
+    const returnUrl = typeof req.body.returnUrl === 'string' && req.body.returnUrl.startsWith('/kiosco/historial')
+        ? req.body.returnUrl
+        : '/kiosco/historial';
+
+    if (!ventaId) {
+        return res.redirect(returnUrl);
+    }
+
+    db.beginTransaction(err => {
+        if (err) {
+            return res.redirect(returnUrl);
+        }
+
+        db.query('SELECT id_producto, cantidad FROM detalle_venta WHERE id_venta = ? FOR UPDATE', [ventaId], (err, detalles) => {
+            if (err) {
+                return db.rollback(() => res.redirect(returnUrl));
+            }
+
+            if (!detalles || detalles.length === 0) {
+                return db.rollback(() => res.redirect(returnUrl));
+            }
+
+            const restoreStock = (index) => {
+                if (index >= detalles.length) {
+                    db.query('DELETE FROM detalle_venta WHERE id_venta = ?', [ventaId], (err) => {
+                        if (err) {
+                            return db.rollback(() => res.redirect(returnUrl));
+                        }
+
+                        db.query('DELETE FROM venta WHERE id_venta = ?', [ventaId], (err) => {
+                            if (err) {
+                                return db.rollback(() => res.redirect(returnUrl));
+                            }
+
+                            db.commit(err => {
+                                if (err) {
+                                    return db.rollback(() => res.redirect(returnUrl));
+                                }
+                                res.redirect(returnUrl);
+                            });
+                        });
+                    });
+                    return;
+                }
+
+                const detalle = detalles[index];
+                db.query(
+                    'UPDATE producto SET stock = stock + ? WHERE id_producto = ?',
+                    [parseInt(detalle.cantidad, 10) || 0, detalle.id_producto],
+                    (err) => {
+                        if (err) {
+                            return db.rollback(() => res.redirect(returnUrl));
+                        }
+                        restoreStock(index + 1);
+                    }
+                );
+            };
+
+            restoreStock(0);
         });
     });
 };

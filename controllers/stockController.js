@@ -4,11 +4,13 @@ exports.getStock = (req, res) => {
     const mensaje = req.query.mensaje || '';
     const tipoMensaje = req.query.tipo || 'info';
 
-    const productosQuery = `SELECT p.id_producto, p.nombre, p.codigo_barras, p.precio_costo, p.precio_venta, p.stock, tp.descripcion AS tipo
+    const productosQuery = `SELECT p.id_producto, p.nombre, p.codigo_barras, p.precio_costo, p.precio_venta, p.stock, p.id_tipo_producto, p.idCategoria, tp.descripcion AS tipo, c.nombre AS categoria
         FROM producto p
         LEFT JOIN tipo_producto tp ON tp.id_tipo_producto = p.id_tipo_producto
+        LEFT JOIN categoria c ON c.ID = p.idCategoria
         ORDER BY p.nombre`;
     const tiposQuery = 'SELECT id_tipo_producto, descripcion FROM tipo_producto ORDER BY descripcion';
+    const categoriasQuery = 'SELECT ID, nombre FROM categoria ORDER BY nombre';
 
     db.query(productosQuery, (err, productos) => {
         if (err) {
@@ -16,6 +18,7 @@ exports.getStock = (req, res) => {
                 title: 'Stock',
                 products: [],
                 tipos: [],
+                categorias: [],
                 mensaje: 'Error al cargar productos.',
                 tipoMensaje: 'error'
             });
@@ -33,12 +36,19 @@ exports.getStock = (req, res) => {
                 tipos = [];
             }
 
-            res.render('stock', {
-                title: 'Stock',
-                products: normalizedProductos,
-                tipos,
-                mensaje,
-                tipoMensaje
+            db.query(categoriasQuery, (err, categorias) => {
+                if (err) {
+                    categorias = [];
+                }
+
+                res.render('stock', {
+                    title: 'Stock',
+                    products: normalizedProductos,
+                    tipos,
+                    categorias,
+                    mensaje,
+                    tipoMensaje
+                });
             });
         });
     });
@@ -54,8 +64,63 @@ exports.guardarProducto = (req, res) => {
         precio_venta,
         stock,
         id_tipo_producto,
+        id_categoria,
+        id_categoria_gestion,
+        categoria_nombre,
         cantidad_a_agregar
     } = req.body;
+
+    if (accion === 'categoria_nueva') {
+        const nombreCategoria = (categoria_nombre || '').trim();
+        if (!nombreCategoria) {
+            return res.redirect('/stock?mensaje=' + encodeURIComponent('Ingrese el nombre de la categoría.') + '&tipo=error');
+        }
+
+        const checkDuplicateQuery = 'SELECT ID FROM categoria WHERE nombre = ?';
+        db.query(checkDuplicateQuery, [nombreCategoria], (err, results) => {
+            if (err) {
+                return res.redirect('/stock?mensaje=' + encodeURIComponent('Error al validar la categoría.') + '&tipo=error');
+            }
+
+            if (results.length > 0) {
+                return res.redirect('/stock?mensaje=' + encodeURIComponent('La categoría ya existe.') + '&tipo=error');
+            }
+
+            db.query('INSERT INTO categoria (nombre) VALUES (?)', [nombreCategoria], (err) => {
+                if (err) {
+                    return res.redirect('/stock?mensaje=' + encodeURIComponent('Error al crear la categoría.') + '&tipo=error');
+                }
+                res.redirect('/stock?mensaje=' + encodeURIComponent('Categoría creada correctamente.') + '&tipo=success');
+            });
+        });
+        return;
+    }
+
+    if (accion === 'categoria_editar') {
+        const nombreCategoria = (categoria_nombre || '').trim();
+        if (!id_categoria_gestion || !nombreCategoria) {
+            return res.redirect('/stock?mensaje=' + encodeURIComponent('Complete los datos para editar la categoría.') + '&tipo=error');
+        }
+
+        const checkDuplicateQuery = 'SELECT ID FROM categoria WHERE nombre = ? AND ID <> ?';
+        db.query(checkDuplicateQuery, [nombreCategoria, parseInt(id_categoria_gestion, 10)], (err, results) => {
+            if (err) {
+                return res.redirect('/stock?mensaje=' + encodeURIComponent('Error al validar la categoría.') + '&tipo=error');
+            }
+
+            if (results.length > 0) {
+                return res.redirect('/stock?mensaje=' + encodeURIComponent('La categoría ya existe.') + '&tipo=error');
+            }
+
+            db.query('UPDATE categoria SET nombre = ? WHERE ID = ?', [nombreCategoria, parseInt(id_categoria_gestion, 10)], (err) => {
+                if (err) {
+                    return res.redirect('/stock?mensaje=' + encodeURIComponent('Error al actualizar la categoría.') + '&tipo=error');
+                }
+                res.redirect('/stock?mensaje=' + encodeURIComponent('Categoría actualizada correctamente.') + '&tipo=success');
+            });
+        });
+        return;
+    }
 
     if (accion === 'nuevo') {
         if (!nombre || !codigo_barras || !precio_venta || !stock || !id_tipo_producto) {
@@ -73,15 +138,16 @@ exports.guardarProducto = (req, res) => {
                 return res.redirect('/stock?mensaje=' + encodeURIComponent('El código de barras ya está registrado para otro producto.') + '&tipo=error');
             }
 
-            const insertQuery = `INSERT INTO producto (nombre, codigo_barras, precio_costo, precio_venta, stock, id_tipo_producto)
-                VALUES (?, ?, ?, ?, ?, ?)`;
+            const insertQuery = `INSERT INTO producto (nombre, codigo_barras, precio_costo, precio_venta, stock, id_tipo_producto, idCategoria)
+                VALUES (?, ?, ?, ?, ?, ?, ?)`;
             db.query(insertQuery, [
                 nombre,
                 codigo_barras,
                 parseFloat(precio_costo) || 0,
                 parseFloat(precio_venta),
                 parseInt(stock, 10),
-                parseInt(id_tipo_producto, 10)
+                parseInt(id_tipo_producto, 10),
+                id_categoria ? parseInt(id_categoria, 10) : null
             ], (err) => {
                 if (err) {
                     return res.redirect('/stock?mensaje=' + encodeURIComponent('Error al cargar el producto.') + '&tipo=error');
@@ -107,7 +173,7 @@ exports.guardarProducto = (req, res) => {
                 return res.redirect('/stock?mensaje=' + encodeURIComponent('El código de barras ya está registrado para otro producto.') + '&tipo=error');
             }
 
-            const updateQuery = `UPDATE producto SET nombre = ?, codigo_barras = ?, precio_costo = ?, precio_venta = ?, stock = ?, id_tipo_producto = ? WHERE id_producto = ?`;
+            const updateQuery = `UPDATE producto SET nombre = ?, codigo_barras = ?, precio_costo = ?, precio_venta = ?, stock = ?, id_tipo_producto = ?, idCategoria = ? WHERE id_producto = ?`;
             db.query(updateQuery, [
                 nombre,
                 codigo_barras,
@@ -115,6 +181,7 @@ exports.guardarProducto = (req, res) => {
                 parseFloat(precio_venta),
                 parseInt(stock, 10),
                 parseInt(id_tipo_producto, 10),
+                id_categoria ? parseInt(id_categoria, 10) : null,
                 parseInt(id_producto, 10)
             ], (err) => {
                 if (err) {

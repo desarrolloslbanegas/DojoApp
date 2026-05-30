@@ -1,42 +1,228 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="/src/icono.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
+    <title>
+        <%= title %>
+    </title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; }
-        header { padding: 22px 24px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
-        main { padding: 24px; }
-        .button { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; background: #6366f1; color: white; text-decoration: none; border: none; cursor: pointer; }
-        .panel { background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 20px; margin-bottom: 24px; }
-        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: end; }
-        .field { display: flex; flex-direction: column; gap: 8px; }
-        .filter-block { display: none; }
-        .filter-block.active { display: flex; }
-        .period-row { display: flex; gap: 12px; flex-wrap: wrap; }
-        .period-row input { flex: 1; min-width: 150px; }
-        .field label { font-size: 0.9rem; color: #475569; }
-        .field input, .field select { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; color: #0f172a; }
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
-        .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; }
-        .summary-card strong { display: block; font-size: 1.2rem; margin-top: 8px; }
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; min-width: 950px; }
-        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-        th { background: #f1f5f9; font-weight: 700; color: #334155; }
-        tr:nth-child(even) { background: #f8fafc; }
-        .right { text-align: right; }
-        .badge { background: #eef2ff; color: #312e81; padding: 6px 10px; border-radius: 999px; font-size: 0.85rem; display: inline-block; }
-        .no-data { padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 18px; color: #475569; }
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        header {
+            padding: 22px 24px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        main {
+            padding: 24px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: 10px;
+            background: #6366f1;
+            color: white;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .button-danger {
+            background: #dc2626;
+        }
+
+        .inline-form {
+            display: inline;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-block {
+            display: none;
+        }
+
+        .filter-block.active {
+            display: flex;
+        }
+
+        .period-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .period-row input {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .field label {
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .field input,
+        .field select {
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .summary-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .summary-card strong {
+            display: block;
+            font-size: 1.2rem;
+            margin-top: 8px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            min-width: 950px;
+        }
+
+        th,
+        td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .badge {
+            background: #eef2ff;
+            color: #312e81;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+
+        .no-data {
+            padding: 24px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            color: #475569;
+        }
+
+        .section-heading {
+            margin: 28px 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .view-tabs {
+            display: inline-flex;
+            gap: 8px;
+            padding: 6px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .view-tab {
+            padding: 10px 14px;
+            border-radius: 9px;
+            color: #334155;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .view-tab.active {
+            background: white;
+            color: #4338ca;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+        }
+
         @media (max-width: 800px) {
-            header { flex-direction: column; align-items: flex-start; }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
+
 <body>
     <header>
         <div>
@@ -45,53 +231,93 @@
         <a href="/menu-principal" class="button"><i data-lucide="arrow-left"></i> Volver al menú</a>
     </header>
     <main>
-        <% const currentFilter = typeof selectedFilter !== 'undefined' ? selectedFilter : 'periodo'; %>
-        <div class="panel">
-            <form class="filters" method="GET" action="/kiosco/historial">
-                <div class="field">
-                    <label for="filtro">Tipo de filtro</label>
-                    <select id="filtro" name="filtro">
-                        <option value="periodo" <%= currentFilter === 'periodo' ? 'selected' : '' %>>Filtrar por período</option>
-                        <option value="dia" <%= currentFilter === 'dia' ? 'selected' : '' %>>Filtrar por día</option>
-                        <option value="mes" <%= currentFilter === 'mes' ? 'selected' : '' %>>Filtrar por mes</option>
-                    </select>
-                </div>
-                <div class="field filter-block <%= currentFilter === 'periodo' ? 'active' : '' %>" id="filtro-periodo">
-                    <label>Filtrar por período</label>
-                    <div class="period-row">
-                        <input type="date" id="fechaInicio" name="fechaInicio" value="<%= selectedFechaInicio || '' %>" placeholder="Fecha inicio">
-                        <input type="date" id="fechaFin" name="fechaFin" value="<%= selectedFechaFin || '' %>" placeholder="Fecha fin">
+        <% const currentFilter = typeof selectedFilter !== 'undefined' ? selectedFilter : 'dia'; %>
+        <% const currentVista = typeof selectedVista !== 'undefined' ? selectedVista : 'ventas'; %>
+        <% 
+            let cancelParams = ['vista=canceladas'];
+            if (selectedFecha) cancelParams.push('fecha=' + encodeURIComponent(selectedFecha));
+            if (selectedMes) cancelParams.push('mes=' + encodeURIComponent(selectedMes));
+            if (selectedFechaInicio) cancelParams.push('fechaInicio=' + encodeURIComponent(selectedFechaInicio));
+            if (selectedFechaFin) cancelParams.push('fechaFin=' + encodeURIComponent(selectedFechaFin));
+            if (selectedVendedor) cancelParams.push('vendedor=' + encodeURIComponent(selectedVendedor));
+            if (selectedItem) cancelParams.push('item=' + encodeURIComponent(selectedItem));
+            if (currentFilter) cancelParams.push('filtro=' + encodeURIComponent(currentFilter));
+            let ventasParams = ['vista=ventas'];
+            if (selectedFecha) ventasParams.push('fecha=' + encodeURIComponent(selectedFecha));
+            if (selectedMes) ventasParams.push('mes=' + encodeURIComponent(selectedMes));
+            if (selectedFechaInicio) ventasParams.push('fechaInicio=' + encodeURIComponent(selectedFechaInicio));
+            if (selectedFechaFin) ventasParams.push('fechaFin=' + encodeURIComponent(selectedFechaFin));
+            if (selectedVendedor) ventasParams.push('vendedor=' + encodeURIComponent(selectedVendedor));
+            if (selectedItem) ventasParams.push('item=' + encodeURIComponent(selectedItem));
+            if (currentFilter) ventasParams.push('filtro=' + encodeURIComponent(currentFilter));
+        %>
+            <div class="view-tabs" aria-label="Vista del historial">
+                <a href="/kiosco/historial?<%= ventasParams.join('&') %>" class="view-tab <%= currentVista === 'ventas' ? 'active' : '' %>">Ventas</a>
+                <a href="/kiosco/historial?<%= cancelParams.join('&') %>" class="view-tab <%= currentVista === 'canceladas' ? 'active' : '' %>">Canceladas</a>
+            </div>
+            <div class="panel">
+                <form class="filters" method="GET" action="/kiosco/historial">
+                    <input type="hidden" name="vista" value="<%= currentVista %>">
+                    <div class="field">
+                        <label for="filtro">Tipo de filtro</label>
+                        <select id="filtro" name="filtro">
+                            <option value="dia" <%=currentFilter==='dia' ? 'selected' : '' %>>Filtrar por día</option>
+                            <option value="mes" <%=currentFilter==='mes' ? 'selected' : '' %>>Filtrar por mes</option>
+                            <option value="periodo" <%=currentFilter==='periodo' ? 'selected' : '' %>>Filtrar por
+                                período</option>
+
+                        </select>
                     </div>
-                </div>
-                <div class="field filter-block <%= currentFilter === 'dia' ? 'active' : '' %>" id="filtro-dia">
-                    <label for="fecha">Filtrar por día</label>
-                    <input type="date" id="fecha" name="fecha" value="<%= selectedFecha || '' %>">
-                </div>
-                <div class="field filter-block <%= currentFilter === 'mes' ? 'active' : '' %>" id="filtro-mes">
-                    <label for="mes">Filtrar por mes</label>
-                    <input type="month" id="mes" name="mes" value="<%= selectedMes || '' %>">
-                </div>
-                <div class="field">
-                    <label for="vendedor">Filtrar por vendedor</label>
-                    <select id="vendedor" name="vendedor">
-                        <option value="">Todos</option>
-                        <% if (vendedores && vendedores.length) { %>
-                            <% vendedores.forEach(v => { %>
-                                <option value="<%= v.id_usuario %>" <%= selectedVendedor == v.id_usuario ? 'selected' : '' %>><%= v.nombre %></option>
-                            <% }) %>
-                        <% } %>
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="item">Buscar por item</label>
-                    <input type="text" id="item" name="item" placeholder="Nombre del producto" value="<%= selectedItem || '' %>">
-                </div>
-                <div class="field">
-                    <label>&nbsp;</label>
-                    <div style="display: flex; gap: 16px; width: 100%; justify-content: center; flex-wrap: wrap;">
-                        <button class="button">Filtrar</button>
-                <% if (selectedFecha || selectedMes || selectedFechaInicio || selectedFechaFin || selectedVendedor || selectedItem) { %>
-                        <a href="/kiosco/historial/pdf?<% 
+                    <div class="field filter-block <%= currentFilter === 'periodo' ? 'active' : '' %>"
+                        id="filtro-periodo">
+                        <label>Filtrar por período</label>
+                        <div class="period-row">
+                            <input type="date" id="fechaInicio" name="fechaInicio"
+                                value="<%= selectedFechaInicio || '' %>" placeholder="Fecha inicio">
+                            <input type="date" id="fechaFin" name="fechaFin" value="<%= selectedFechaFin || '' %>"
+                                placeholder="Fecha fin">
+                        </div>
+                    </div>
+                    <div class="field filter-block <%= currentFilter === 'dia' ? 'active' : '' %>" id="filtro-dia">
+                        <label for="fecha">Filtrar por día</label>
+                        <input type="date" id="fecha" name="fecha" value="<%= selectedFecha || '' %>">
+                    </div>
+                    <div class="field filter-block <%= currentFilter === 'mes' ? 'active' : '' %>" id="filtro-mes">
+                        <label for="mes">Filtrar por mes</label>
+                        <input type="month" id="mes" name="mes" value="<%= selectedMes || '' %>">
+                    </div>
+                    <div class="field">
+                        <label for="vendedor">Filtrar por vendedor</label>
+                        <select id="vendedor" name="vendedor">
+                            <option value="">Todos</option>
+                            <% if (vendedores && vendedores.length) { %>
+                                <% vendedores.forEach(v=> { %>
+                                    <option value="<%= v.id_usuario %>" <%=selectedVendedor==v.id_usuario ? 'selected'
+                                        : '' %>><%= v.nombre %>
+                                    </option>
+                                    <% }) %>
+                                        <% } %>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="item">Buscar por item</label>
+                        <input type="text" id="item" name="item" list="productos" placeholder="Nombre del producto"
+                            value="<%= selectedItem || '' %>">
+                        <datalist id="productos">
+                            <% if (productos && productos.length) { %>
+                                <% productos.forEach(producto=> { %>
+                                    <option value="<%= producto.nombre %>"></option>
+                                    <% }) %>
+                                        <% } %>
+                        </datalist>
+                    </div>
+                    <div class="field">
+                        <label>&nbsp;</label>
+                        <div style="display: flex; gap: 16px; width: 100%; justify-content: center; flex-wrap: wrap;">
+                            <button class="button">Filtrar</button>
+                            <% if (selectedFecha || selectedMes || selectedFechaInicio || selectedFechaFin ||
+                                selectedVendedor || selectedItem) { %>
+                                <a href="/kiosco/historial/pdf?<% 
                             let params = [];
                             if (selectedFecha) params.push('fecha=' + encodeURIComponent(selectedFecha));
                             if (selectedMes) params.push('mes=' + encodeURIComponent(selectedMes));
@@ -99,71 +325,167 @@
                             if (selectedFechaFin) params.push('fechaFin=' + encodeURIComponent(selectedFechaFin));
                             if (selectedVendedor) params.push('vendedor=' + encodeURIComponent(selectedVendedor));
                             if (selectedItem) params.push('item=' + encodeURIComponent(selectedItem));
-                        %><%= params.join('&') %>" class="button" style="background: #10b981;"><i data-lucide="download"></i> Exportar PDF</a>
-                        <% } %>
+                        %><%= params.join('&') %>" class="button" style="background: #10b981;"><i
+                                        data-lucide="download"></i> Exportar PDF</a>
+                                <% } %>
+                        </div>
                     </div>
-                </div>
-            </form>
-            <div class="summary-grid">
-                <div class="summary-card">
-                    <span>Total de registros</span>
-                    <strong><%= ventas ? ventas.length : 0 %></strong>
-                </div>
-                <div class="summary-card">
-                    <span>Total de ventas</span>
-                    <strong>$<%= resumen ? resumen.total.toFixed(2) : '0.00' %></strong>
-                </div>
-                <div class="summary-card">
-                    <span>Efectivo</span>
-                    <strong>$<%= resumen ? resumen.efectivo.toFixed(2) : '0.00' %></strong>
-                </div>
-                <div class="summary-card">
-                    <span>Transferencia</span>
-                    <strong>$<%= resumen ? resumen.transferencia.toFixed(2) : '0.00' %></strong>
-                </div>
-                <div class="summary-card">
-                    <span>Ganancia total</span>
-                    <strong>$<%= resumen ? resumen.ganancia.toFixed(2) : '0.00' %></strong>
+                </form>
+                <div class="summary-grid">
+                    <% if (currentVista === 'canceladas') { %>
+                        <div class="summary-card">
+                            <span>Canceladas</span>
+                            <strong><%= resumenCanceladas ? resumenCanceladas.cantidad : 0 %></strong>
+                        </div>
+                        <div class="summary-card">
+                            <span>Total cancelado</span>
+                            <strong>$<%= resumenCanceladas ? resumenCanceladas.total.toFixed(2) : '0.00' %></strong>
+                        </div>
+                    <% } else { %>
+                        <div class="summary-card">
+                            <span>Total de registros</span>
+                            <strong>
+                                <%= ventas ? ventas.length : 0 %>
+                            </strong>
+                        </div>
+                        <div class="summary-card">
+                            <span>Total de ventas</span>
+                            <strong>$<%= resumen ? resumen.total.toFixed(2) : '0.00' %></strong>
+                        </div>
+                        <div class="summary-card">
+                            <span>Efectivo</span>
+                            <strong>$<%= resumen ? resumen.efectivo.toFixed(2) : '0.00' %></strong>
+                        </div>
+                        <div class="summary-card">
+                            <span>Transferencia</span>
+                            <strong>$<%= resumen ? resumen.transferencia.toFixed(2) : '0.00' %></strong>
+                        </div>
+                        <div class="summary-card">
+                            <span>Ganancia total</span>
+                            <strong>$<%= resumen ? resumen.ganancia.toFixed(2) : '0.00' %></strong>
+                        </div>
+                    <% } %>
                 </div>
             </div>
-        </div>
 
-        <% if (!ventas || ventas.length === 0) { %>
-            <div class="no-data">No se encontraron ventas con los filtros seleccionados.</div>
-        <% } else { %>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Venta</th>
-                            <th>Fecha</th>
-                            <th>Hora</th>
-                            <th>Vendedor</th>
-                            <th class="right">Total</th>
-                            <th class="right">Efectivo</th>
-                            <th class="right">Transferencia</th>
-                            <th class="right">Ganancia</th>
-                            <th>Items</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% ventas.forEach(venta => { %>
-                            <tr>
-                                <td>#<%= venta.id %></td>
-                                <td><%= venta.fecha %></td>
-                                <td><%= venta.hora %></td>
-                                <td><%= venta.vendedor %></td>
-                                <td class="right">$<%= venta.monto_total.toFixed(2) %></td>
-                                <td class="right"><%= venta.efectivo !== undefined ? '$' + Number(venta.efectivo).toFixed(2) : '-' %></td>
-                                <td class="right"><%= venta.transferencia !== undefined ? '$' + Number(venta.transferencia).toFixed(2) : '-' %></td>
-                                <td class="right">$<%= venta.ganancia.toFixed(2) %></td>
-                                <td><%= venta.items.map(item => item.producto + ' x' + item.cantidad).join(', ') %></td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
+            <% if (currentVista !== 'canceladas') { %>
+            <% if (!ventas || ventas.length===0) { %>
+                <div class="no-data">No se encontraron ventas con los filtros seleccionados.</div>
+                <% } else { %>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Venta</th>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Vendedor</th>
+                                    <th class="right">Total</th>
+                                    <th class="right">Efectivo</th>
+                                    <th class="right">Transferencia</th>
+                                    <th class="right">Ganancia</th>
+                                    <th>Items</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% ventas.forEach(venta=> { %>
+                                    <tr>
+                                        <td>#<%= venta.id %>
+                                        </td>
+                                        <td>
+                                            <%= venta.fecha %>
+                                        </td>
+                                        <td>
+                                            <%= venta.hora %>
+                                        </td>
+                                        <td>
+                                            <%= venta.vendedor %>
+                                        </td>
+                                        <td class="right">$<%= venta.monto_total.toFixed(2) %>
+                                        </td>
+                                        <td class="right">
+                                            <%= venta.efectivo !==undefined ? '$' + Number(venta.efectivo).toFixed(2)
+                                                : '-' %>
+                                        </td>
+                                        <td class="right">
+                                            <%= venta.transferencia !==undefined ? '$' +
+                                                Number(venta.transferencia).toFixed(2) : '-' %>
+                                        </td>
+                                        <td class="right">$<%= venta.ganancia.toFixed(2) %>
+                                        </td>
+                                        <td>
+                                            <%= venta.items.map(item=> item.producto + ' x' + item.cantidad).join(', ')
+                                                %>
+                                        </td>
+                                        <td>
+                                            <form class="inline-form" method="POST" action="/kiosco/venta/<%= venta.id %>/eliminar" onsubmit="return confirm('¿Eliminar esta venta? Se borrará de la base y se devolverá el stock.');">
+                                                <input type="hidden" name="returnUrl" value="/kiosco/historial?<%= ventasParams.join('&') %>">
+                                                <button class="button button-danger" type="submit">Eliminar</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% } %>
+            <% } %>
+
+            <% if (currentVista === 'canceladas') { %>
+            <div class="section-heading">
+                <h2>Ventas canceladas</h2>
+                <span class="badge">
+                    <%= resumenCanceladas ? resumenCanceladas.cantidad : 0 %> registros · $<%=
+                        resumenCanceladas ? resumenCanceladas.total.toFixed(2) : '0.00' %>
+                </span>
             </div>
-        <% } %>
+
+            <% if (!ventasCanceladas || ventasCanceladas.length===0) { %>
+                <div class="no-data">No se encontraron ventas canceladas con los filtros seleccionados.</div>
+                <% } else { %>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cancelada</th>
+                                    <th>Origen</th>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Vendedor</th>
+                                    <th>Medio</th>
+                                    <th class="right">Total</th>
+                                    <th class="right">Items</th>
+                                    <th>Motivo</th>
+                                    <th>Detalle</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% ventasCanceladas.forEach(venta=> { %>
+                                    <tr>
+                                        <td>#<%= venta.id %></td>
+                                        <td><%= venta.origen %></td>
+                                        <td><%= venta.fecha %></td>
+                                        <td><%= venta.hora %></td>
+                                        <td><%= venta.vendedor %></td>
+                                        <td><%= venta.medio_pago %></td>
+                                        <td class="right">$<%= Number(venta.monto_total || 0).toFixed(2) %></td>
+                                        <td class="right"><%= Number(venta.cantidad_items || 0).toFixed(3) %></td>
+                                        <td><%= venta.motivo %></td>
+                                        <td>
+                                            <%= venta.items.map(item=> {
+                                                const nombre = item.nombre || item.producto || item.desc || 'Producto';
+                                                const cantidad = item.cantidad || item.qty || 0;
+                                                return nombre + ' x' + cantidad;
+                                            }).join(', ') %>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% } %>
+            <% } %>
     </main>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
@@ -199,4 +521,5 @@
         });
     </script>
 </body>
+
 </html>

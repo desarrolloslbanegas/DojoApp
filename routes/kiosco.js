@@ -7,4 +7,6 @@ router.get('/buscar/:nombre', kioscoController.buscarProductoPorNombre);
 router.get('/historial', kioscoController.getHistorialVentas);
 router.get('/historial/pdf', kioscoController.exportHistorialPDF);
 router.post('/venta', kioscoController.registrarVenta);
+router.post('/venta/:id/eliminar', kioscoController.eliminarVenta);
+router.post('/venta-cancelada', kioscoController.registrarVentaCancelada);
 module.exports = router;
